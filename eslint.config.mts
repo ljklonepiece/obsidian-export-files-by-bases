@@ -16,8 +16,16 @@ export default tseslint.config(
 						'manifest.json'
 					]
 				},
-				tsconfigRootDir: import.meta.dirname,
+				tsconfigRootDir: import.meta.dirname ?? "",
 				extraFileExtensions: ['.json']
+			},
+		},
+	},
+	{
+		files: ["**/*.test.ts", "**/__mocks__/**/*.ts"],
+		languageOptions: {
+			globals: {
+				...globals.jest,
 			},
 		},
 	},

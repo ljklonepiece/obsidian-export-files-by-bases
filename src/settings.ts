@@ -1,15 +1,15 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import ExportBasesFilesPlugin from "./main";
 
-export interface MyPluginSettings {
+export interface ExportBasesSettings {
 	mySetting: string;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
+export const DEFAULT_SETTINGS: ExportBasesSettings = {
 	mySetting: 'default'
 }
 
-export class SampleSettingTab extends PluginSettingTab {
+export class ExportBasesSettingTab extends PluginSettingTab {
 	plugin: ExportBasesFilesPlugin;
 
 	constructor(app: App, plugin: ExportBasesFilesPlugin) {
@@ -24,7 +24,7 @@ export class SampleSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Settings #1')
-			.setDesc('It\'s a secret')
+			.setDesc("It's a secret")
 			.addText(text => text
 				.setPlaceholder('Enter your secret')
 				.setValue(this.plugin.settings.mySetting)

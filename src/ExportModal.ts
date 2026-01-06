@@ -1,9 +1,70 @@
-import { App, Modal, Setting, Notice, TFolder, parseYaml } from 'obsidian';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable obsidianmd/ui/sentence-case */
+import { App, Modal, Setting, Notice, parseYaml, TFile } from 'obsidian';
+
+interface BaseInfo {
+    id: string;
+    name: string;
+    file: TFile;
+}
+
+interface ViewInfo {
+    id: string;
+    name: string;
+    view: any;
+    baseInstance: any;
+}
+
+interface BasesController {
+    viewName?: string;
+    queryState?: any;
+    ctx?: any;
+    selectView?(name: string): void;
+    setQueryAndView?(a: any, b: string): void;
+    viewHeaderEl?: HTMLElement;
+    viewContainerEl?: HTMLElement;
+    view?: {
+        data?: { data?: any[] };
+        rows?: any[];
+    };
+    _children?: any[];
+}
+
+interface BasesView {
+    file?: TFile;
+    controller?: BasesController;
+    containerEl?: HTMLElement;
+}
+
+interface BasesPlugin {
+    enabled: boolean;
+    instance?: any;
+}
+
+interface ExtendedApp extends App {
+    internalPlugins?: {
+        getPluginById(id: string): BasesPlugin | null;
+        plugins: Record<string, BasesPlugin>;
+    };
+    plugins?: {
+        getPlugin(id: string): BasesPlugin | null;
+        plugins: Record<string, BasesPlugin>;
+    };
+    viewRegistry?: {
+        viewByType: Record<string, any>;
+    };
+}
 
 export class ExportModal extends Modal {
-    selectedBase: any = null;
-    selectedView: any = null;
-    targetPath: string = "";
+    selectedBase: BaseInfo | null = null;
+    selectedView: ViewInfo | null = null;
+    targetPath = "";
+    _autoDetectedViewName?: string;
 
     constructor(app: App) {
         super(app);
@@ -12,15 +73,15 @@ export class ExportModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: 'Export-Bases-Files' });
+        contentEl.createEl('h2', { text: 'Export bases files' });
 
-        this.display();
+        void this.display();
     }
 
     async display() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: 'Export-Bases-Files' });
+        contentEl.createEl('h2', { text: 'Export bases files' });
 
         try {
             // Fetch data upfront to avoid async race conditions in dropdowns
@@ -28,23 +89,23 @@ export class ExportModal extends Modal {
 
             // Auto-detect active Base and View from workspace
             if (!this.selectedBase) {
-                const app = this.app as any;
-                const leaves = app.workspace.getLeavesOfType('bases') || [];
+                const app = this.app as ExtendedApp;
+                const leaves = app.workspace.getLeavesOfType('bases') as any[];
                 if (leaves.length > 0) {
-                    const activeLeaf = leaves.find((l: any) => l.view?.file) || leaves[0];
+                    const activeLeaf = (leaves.find((l) => (l.view as BasesView)?.file) || leaves[0]) as { view: BasesView };
                     if (activeLeaf?.view?.file) {
                         const activeBasePath = activeLeaf.view.file.path;
-                        const matchingBase = bases.find((b: any) => b.file?.path === activeBasePath);
+                        const matchingBase = bases.find((b) => b.file?.path === activeBasePath);
                         if (matchingBase) {
-                            console.info('[ExportBases] Auto-detected active Base:', matchingBase.name);
+                            console.debug('[ExportBases] Auto-detected active Base:', matchingBase.name);
                             this.selectedBase = matchingBase;
 
                             // Also try to detect the active view
                             const controller = activeLeaf.view?.controller;
                             if (controller?.viewName) {
-                                console.info('[ExportBases] Auto-detected active View:', controller.viewName);
+                                console.debug('[ExportBases] Auto-detected active View:', controller.viewName);
                                 // We'll set selectedView after getting views below
-                                (this as any)._autoDetectedViewName = controller.viewName;
+                                this._autoDetectedViewName = controller.viewName;
                             }
                         }
                     }
@@ -53,16 +114,16 @@ export class ExportModal extends Modal {
 
             // 1. Select Base
             new Setting(contentEl)
-                .setName('Select Base')
-                .setDesc('Select the Base you want to export from')
+                .setName('Select base')
+                .setDesc('Select the base you want to export from')
                 .addDropdown((dropdown) => {
-                    dropdown.addOption("", "Select a Base");
-                    bases.forEach((base: any) => {
+                    dropdown.addOption("", "Select a base");
+                    bases.forEach((base) => {
                         dropdown.addOption(base.id, base.name);
                     });
                     dropdown.setValue(this.selectedBase?.id || "");
                     dropdown.onChange(async (value) => {
-                        this.selectedBase = bases.find((b: any) => b.id === value);
+                        this.selectedBase = bases.find((b) => b.id === value) || null;
                         this.selectedView = null; // Reset view when base changes
                         await this.display();
                     });
@@ -70,25 +131,25 @@ export class ExportModal extends Modal {
 
             // 2. Select View (only if Base is selected)
             if (this.selectedBase) {
-                console.log('Fetching views for selected base:', this.selectedBase.name);
+                console.debug('Fetching views for selected base:', this.selectedBase.name);
                 const views = await this.getViews(this.selectedBase);
-                console.log('Found views:', views.length);
+                console.debug('Found views:', views.length);
 
                 // Auto-select the detected view if not already selected
-                if (!this.selectedView && (this as any)._autoDetectedViewName) {
-                    const autoView = views.find((v: any) => v.name === (this as any)._autoDetectedViewName);
+                if (!this.selectedView && this._autoDetectedViewName) {
+                    const autoView = views.find((v) => v.name === this._autoDetectedViewName);
                     if (autoView) {
-                        console.info('[ExportBases] Auto-selecting view:', autoView.name);
+                        console.debug('[ExportBases] Auto-selecting view:', autoView.name);
                         this.selectedView = autoView;
                     }
-                    delete (this as any)._autoDetectedViewName;
+                    delete this._autoDetectedViewName;
                 }
 
                 new Setting(contentEl)
-                    .setName('Select View')
-                    .setDesc('Select the Table View containing the filtering logic')
+                    .setName('Select view')
+                    .setDesc('Select the table view containing the filtering logic')
                     .addDropdown((dropdown) => {
-                        dropdown.addOption("", "Select a View");
+                        dropdown.addOption("", "Select a view");
                         views.forEach((view: any) => {
                             dropdown.addOption(view.id, view.name);
                         });
@@ -119,7 +180,7 @@ export class ExportModal extends Modal {
 
                             const result = await dialog.showOpenDialog({
                                 properties: ['openDirectory'],
-                                title: 'Select Export Directory'
+                                title: 'Select export directory'
                             });
 
                             if (!result.canceled && result.filePaths.length > 0) {
@@ -152,19 +213,19 @@ export class ExportModal extends Modal {
     }
 
 
-    async getBases(): Promise<any[]> {
-        const app = this.app as any;
+    async getBases(): Promise<BaseInfo[]> {
+        const app = this.app as ExtendedApp;
         // Try both internal and third-party plugin locations
         const basesPlugin = app.internalPlugins?.getPluginById('bases') || app.plugins?.getPlugin('bases');
 
         if (basesPlugin && basesPlugin.enabled) {
-            console.info('[ExportBases] Bases plugin detected.');
+            console.debug('[ExportBases] Bases plugin detected.');
         } else {
             console.warn('[ExportBases] Bases plugin not found or not enabled.');
         }
 
         const files = this.app.vault.getFiles().filter(f => f.extension === 'base');
-        console.log('Found .base files:', files);
+        console.debug('Found .base files:', files);
 
         return files.map(file => ({
             id: file.path,
@@ -175,67 +236,67 @@ export class ExportModal extends Modal {
 
 
 
-    async getViews(base: any): Promise<any[]> {
-        console.info('[ExportBases] getViews called for base:', base.name);
+    async getViews(base: BaseInfo): Promise<ViewInfo[]> {
+        console.debug('[ExportBases] getViews called for base:', base.name);
         if (!base || !base.file) {
             console.warn('[ExportBases] No base file provided to getViews');
             return [];
         }
 
-        let matchingBase: any = null;
-        const app = this.app as any;
+        let matchingBase: BasesView | null = null;
+        const app = this.app as ExtendedApp;
 
         // Deep exploration of plugin structure
-        console.info('[ExportBases] === DEEP PLUGIN EXPLORATION ===');
+        console.debug('[ExportBases] === DEEP PLUGIN EXPLORATION ===');
 
         // Check internal plugin
         const internalPlugin = app.internalPlugins?.getPluginById('bases');
-        console.info('[ExportBases] Internal plugin:', internalPlugin ? 'FOUND' : 'NOT FOUND');
+        console.debug('[ExportBases] Internal plugin:', internalPlugin ? 'FOUND' : 'NOT FOUND');
         if (internalPlugin) {
-            console.info('[ExportBases] Internal plugin keys:', Object.keys(internalPlugin));
+            console.debug('[ExportBases] Internal plugin keys:', Object.keys(internalPlugin));
             if (internalPlugin.instance) {
-                console.info('[ExportBases] Instance keys:', Object.keys(internalPlugin.instance));
+                console.debug('[ExportBases] Instance keys:', Object.keys(internalPlugin.instance));
             }
         }
 
         // Check third-party plugin
         const thirdPartyPlugin = app.plugins?.getPlugin('bases');
-        console.info('[ExportBases] Third-party plugin:', thirdPartyPlugin ? 'FOUND' : 'NOT FOUND');
+        console.debug('[ExportBases] Third-party plugin:', thirdPartyPlugin ? 'FOUND' : 'NOT FOUND');
         if (thirdPartyPlugin) {
-            console.info('[ExportBases] Third-party plugin keys:', Object.keys(thirdPartyPlugin));
+            console.debug('[ExportBases] Third-party plugin keys:', Object.keys(thirdPartyPlugin));
         }
 
         // The Bases feature might be part of Obsidian core, not a separate plugin
         // Let's check if there's a bases manager on the app itself
-        console.info('[ExportBases] App keys:', Object.keys(app).filter(k => k.toLowerCase().includes('base')));
+        console.debug('[ExportBases] App keys:', Object.keys(app).filter(k => k.toLowerCase().includes('base')));
 
         // Check workspace for open base files
         const leaves = app.workspace?.getLeavesOfType?.('bases') || [];
-        console.info('[ExportBases] Open Bases leaves:', leaves.length);
+        console.debug('[ExportBases] Open Bases leaves:', leaves.length);
         if (leaves.length > 0) {
             const firstLeaf = leaves[0];
-            console.info('[ExportBases] First leaf view keys:', Object.keys(firstLeaf.view || {}));
+            console.debug('[ExportBases] First leaf view keys:', Object.keys(firstLeaf.view || {}));
             if (firstLeaf.view) {
                 // The view might have the actual data
-                console.info('[ExportBases] Leaf view file:', firstLeaf.view.file?.path);
+                console.debug('[ExportBases] Leaf view file:', firstLeaf.view.file?.path);
                 if (firstLeaf.view.file?.path === base.file.path) {
                     matchingBase = firstLeaf.view;
-                    console.info('[ExportBases] MATCH! Found matching base view in workspace.');
+                    console.debug('[ExportBases] MATCH! Found matching base view in workspace.');
                 }
             }
         }
 
-        console.info('[ExportBases] === END EXPLORATION ===');
+        console.debug('[ExportBases] === END EXPLORATION ===');
 
         try {
-            console.info('[ExportBases] Reading .base file:', base.file.path);
+            console.debug('[ExportBases] Reading .base file:', base.file.path);
             const content = await this.app.vault.read(base.file);
-            console.info('[ExportBases] File read successfully, length:', content?.length);
+            console.debug('[ExportBases] File read successfully, length:', content?.length);
 
             if (!content || content.trim() === "") return [];
 
             const data = parseYaml(content);
-            console.info('[ExportBases] YAML parsed successfully:', !!data);
+            console.debug('[ExportBases] YAML parsed successfully:', !!data);
 
             if (data && data.views) {
                 const viewsArray = Array.isArray(data.views) ? data.views : Object.entries(data.views).map(([id, view]) => ({ ...(view as any), id }));
@@ -286,23 +347,23 @@ export class ExportModal extends Modal {
         }
     }
 
-    async getFilteredFiles(base: any, viewInfo: any): Promise<any[]> {
-        console.info('[ExportBases] getFilteredFiles called for view:', viewInfo.name, 'in base:', base.name);
+    async getFilteredFiles(base: BaseInfo, viewInfo: ViewInfo): Promise<TFile[]> {
+        console.debug('[ExportBases] getFilteredFiles called for view:', viewInfo.name, 'in base:', base.name);
 
-        const app = this.app as any;
+        const app = this.app as ExtendedApp;
 
         // First, ensure the correct Base is open in a tab
         let leafView = viewInfo.baseInstance;
 
         // Check if we have a valid baseInstance and it matches the selected base
         if (!leafView || leafView.file?.path !== base.file?.path) {
-            console.info('[ExportBases] Selected Base is not the active one. Opening it...');
+            console.debug('[ExportBases] Selected Base is not the active one. Opening it...');
 
             // Open the Base file
             const baseFile = base.file;
             if (baseFile) {
                 // Open the file in a new leaf
-                const leaf = await app.workspace.getLeaf(false);
+                const leaf = app.workspace.getLeaf(false);
                 await leaf.openFile(baseFile);
 
                 // Wait for it to load
@@ -313,7 +374,7 @@ export class ExportModal extends Modal {
                 for (const l of leaves) {
                     if (l.view?.file?.path === baseFile.path) {
                         leafView = l.view;
-                        console.info('[ExportBases] Found opened Base leaf view.');
+                        console.debug('[ExportBases] Found opened Base leaf view.');
                         break;
                     }
                 }
@@ -338,27 +399,27 @@ export class ExportModal extends Modal {
         const controller = leafView.controller;
 
         if (controller) {
-            console.info('[ExportBases] Controller found. Exploring all possible result locations...');
+            console.debug('[ExportBases] Controller found. Exploring all possible result locations...');
 
             // Explore queryState
             if (controller.queryState) {
-                console.info('[ExportBases] queryState keys:', Object.keys(controller.queryState));
+                console.debug('[ExportBases] queryState keys:', Object.keys(controller.queryState));
                 if (controller.queryState.results) {
-                    console.info('[ExportBases] queryState.results:', controller.queryState.results);
+                    console.debug('[ExportBases] queryState.results:', controller.queryState.results);
                 }
                 if (controller.queryState.data) {
-                    console.info('[ExportBases] queryState.data:', controller.queryState.data);
+                    console.debug('[ExportBases] queryState.data:', controller.queryState.data);
                 }
             }
 
             // Explore ctx (context)
             if (controller.ctx) {
-                console.info('[ExportBases] ctx keys:', Object.keys(controller.ctx));
+                console.debug('[ExportBases] ctx keys:', Object.keys(controller.ctx));
                 if (controller.ctx.results) {
                     const ctxResults = controller.ctx.results;
-                    console.info('[ExportBases] ctx.results:', Array.isArray(ctxResults) ? ctxResults.length + ' items' : typeof ctxResults);
+                    console.debug('[ExportBases] ctx.results:', Array.isArray(ctxResults) ? ctxResults.length + ' items' : typeof ctxResults);
                     if (Array.isArray(ctxResults) && ctxResults.length > 0) {
-                        console.info('[ExportBases] SUCCESS: Found ctx.results!');
+                        console.debug('[ExportBases] SUCCESS: Found ctx.results!');
                         return ctxResults.map((r: any) => r.file || r).filter((f: any) => f && f.path);
                     }
                 }
@@ -367,26 +428,26 @@ export class ExportModal extends Modal {
             // Explore view - the data is in controller.view.data.data
             // IMPORTANT: The controller only has data for the CURRENTLY ACTIVE view
             const activeViewName = controller.viewName;
-            console.info('[ExportBases] Active view in Bases tab:', activeViewName);
-            console.info('[ExportBases] Requested view:', viewInfo.name);
+            console.debug('[ExportBases] Active view in Bases tab:', activeViewName);
+            console.debug('[ExportBases] Requested view:', viewInfo.name);
 
             if (activeViewName && activeViewName !== viewInfo.name) {
-                console.info('[ExportBases] View mismatch. Attempting to switch views programmatically...');
+                console.debug('[ExportBases] View mismatch. Attempting to switch views programmatically...');
 
                 // Explore controller methods for view switching
                 const controllerProto = Object.getPrototypeOf(controller);
                 const methods = Object.getOwnPropertyNames(controllerProto).filter(m => typeof controller[m] === 'function');
-                console.info('[ExportBases] Controller methods related to views:', methods.filter(m =>
+                console.debug('[ExportBases] Controller methods related to views:', methods.filter(m =>
                     m.toLowerCase().includes('view') || m.toLowerCase().includes('switch') || m.toLowerCase().includes('set')
                 ));
 
                 // Try calling selectView first (discovered from controller methods)
                 if (typeof controller.selectView === 'function') {
-                    console.info('[ExportBases] Calling selectView...');
+                    console.debug('[ExportBases] Calling selectView...');
                     controller.selectView(viewInfo.name);
                     await new Promise(r => setTimeout(r, 200));
                 } else if (typeof controller.setQueryAndView === 'function') {
-                    console.info('[ExportBases] Calling setQueryAndView...');
+                    console.debug('[ExportBases] Calling setQueryAndView...');
                     controller.setQueryAndView(null, viewInfo.name);
                     await new Promise(r => setTimeout(r, 200));
                 } else {
@@ -396,7 +457,7 @@ export class ExportModal extends Modal {
                         const tabs = viewHeader.querySelectorAll('*');
                         for (const el of tabs) {
                             if (el.textContent?.trim() === viewInfo.name) {
-                                console.info('[ExportBases] Clicking view tab in DOM...');
+                                console.debug('[ExportBases] Clicking view tab in DOM...');
                                 el.click();
                                 await new Promise(r => setTimeout(r, 300));
                                 break;
@@ -412,7 +473,7 @@ export class ExportModal extends Modal {
                     new Notice('Please switch to the "' + viewInfo.name + '" view in the Bases tab first.');
                     return [];
                 }
-                console.info('[ExportBases] View switch successful!');
+                console.debug('[ExportBases] View switch successful!');
             }
 
             if (controller.view) {
@@ -420,9 +481,9 @@ export class ExportModal extends Modal {
                 // The actual results are in controller.view.data.data
                 if (controller.view.data && controller.view.data.data && Array.isArray(controller.view.data.data)) {
                     const results = controller.view.data.data;
-                    console.info('[ExportBases] SUCCESS: Found controller.view.data.data with', results.length, 'entries');
+                    console.debug('[ExportBases] SUCCESS: Found controller.view.data.data with', results.length, 'entries');
                     if (results.length > 0) {
-                        console.info('[ExportBases] First entry keys:', Object.keys(results[0]));
+                        console.debug('[ExportBases] First entry keys:', Object.keys(results[0]));
                     }
                     return results.map((r: any) => {
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
@@ -433,9 +494,9 @@ export class ExportModal extends Modal {
                 // Also check controller.view.rows
                 if (controller.view.rows && Array.isArray(controller.view.rows)) {
                     const rows = controller.view.rows;
-                    console.info('[ExportBases] SUCCESS: Found controller.view.rows with', rows.length, 'entries');
+                    console.debug('[ExportBases] SUCCESS: Found controller.view.rows with', rows.length, 'entries');
                     if (rows.length > 0) {
-                        console.info('[ExportBases] First row keys:', Object.keys(rows[0]));
+                        console.debug('[ExportBases] First row keys:', Object.keys(rows[0]));
                     }
                     return rows.map((r: any) => {
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
@@ -446,15 +507,15 @@ export class ExportModal extends Modal {
 
             // Explore _children (might contain the actual view components)
             if (controller._children && controller._children.length > 0) {
-                console.info('[ExportBases] controller._children:', controller._children.length, 'children');
+                console.debug('[ExportBases] controller._children:', controller._children.length, 'children');
                 const firstChild = controller._children[0];
                 if (firstChild) {
-                    console.info('[ExportBases] First child keys:', Object.keys(firstChild));
+                    console.debug('[ExportBases] First child keys:', Object.keys(firstChild));
                     if (firstChild.results) {
-                        console.info('[ExportBases] First child has results!');
+                        console.debug('[ExportBases] First child has results!');
                     }
                     if (firstChild.data) {
-                        console.info('[ExportBases] First child data:', firstChild.data);
+                        console.debug('[ExportBases] First child data:', firstChild.data);
                     }
                 }
             }
@@ -463,7 +524,7 @@ export class ExportModal extends Modal {
             const viewContainer = controller.viewContainerEl;
             if (viewContainer) {
                 const rows = viewContainer.querySelectorAll('.bases-row, tr[data-file], .table-row');
-                console.info('[ExportBases] DOM table rows found:', rows.length);
+                console.debug('[ExportBases] DOM table rows found:', rows.length);
                 if (rows.length > 0) {
                     // Extract file paths from DOM if possible
                     const files: any[] = [];
@@ -475,7 +536,7 @@ export class ExportModal extends Modal {
                         }
                     });
                     if (files.length > 0) {
-                        console.info('[ExportBases] SUCCESS: Extracted', files.length, 'files from DOM');
+                        console.debug('[ExportBases] SUCCESS: Extracted', files.length, 'files from DOM');
                         return files;
                     }
                 }
@@ -490,10 +551,11 @@ export class ExportModal extends Modal {
         return [];
     }
 
-    async copyFileToExternalFolder(file: any, targetPath: string) {
+    async copyFileToExternalFolder(file: TFile, targetPath: string) {
         // Only run on desktop where fs is available
-        const fs = (window as any).require('fs');
-        const path = (window as any).require('path');
+        const electron = (window as any).require('electron');
+        const fs = electron.remote ? electron.remote.fs : (window as any).require('fs');
+        const path = electron.remote ? electron.remote.path : (window as any).require('path');
 
         if (!fs || !path) {
             new Notice('File system access is not available (are you on mobile?)');
@@ -502,7 +564,7 @@ export class ExportModal extends Modal {
 
         try {
             const arrayBuffer = await this.app.vault.readBinary(file);
-            const buffer = Buffer.from(arrayBuffer);
+            const buffer = globalThis.Buffer.from(arrayBuffer);
 
             // Handle subfolders if the file is in a folder in Obsidian?
             // The user requested to export to a specified folder.
@@ -514,7 +576,7 @@ export class ExportModal extends Modal {
             }
 
             fs.writeFileSync(destination, buffer);
-            console.log(`Exported: ${file.path} -> ${destination}`);
+            console.debug(`Exported: ${file.path} -> ${destination}`);
         } catch (e) {
             console.error(`Failed to export ${file.path}:`, e);
             throw e;

@@ -1,8 +1,8 @@
 export class App { }
 export class Modal {
-    app: any;
+    app: unknown;
     contentEl: HTMLElement;
-    constructor(app: any) {
+    constructor(app: unknown) {
         this.app = app;
         this.contentEl = document.createElement('div');
     }
@@ -15,9 +15,9 @@ export class Setting {
     constructor(containerEl: HTMLElement) { }
     setName(name: string) { return this; }
     setDesc(desc: string) { return this; }
-    addDropdown(callback: (dropdown: any) => void) { return this; }
-    addText(callback: (text: any) => void) { return this; }
-    addButton(callback: (button: any) => void) { return this; }
+    addDropdown(callback: (dropdown: unknown) => void) { return this; }
+    addText(callback: (text: unknown) => void) { return this; }
+    addButton(callback: (button: unknown) => void) { return this; }
 }
 export const Notice = jest.fn();
 export const parseYaml = jest.fn((content: string) => {
@@ -31,6 +31,6 @@ export const parseYaml = jest.fn((content: string) => {
 });
 export class Plugin { }
 export class PluginSettingTab {
-    constructor(app: any, plugin: any) { }
+    constructor(app: unknown, plugin: unknown) { }
 }
 export class TFolder { }
