@@ -155,7 +155,7 @@ export class ExportModal extends Modal {
                         });
                         dropdown.setValue(this.selectedView?.id || "");
                         dropdown.onChange((value) => {
-                            this.selectedView = views.find((v: any) => v.id === value);
+                            this.selectedView = views.find((v: any) => v.id === value) || null;
                         });
                     });
             }
@@ -176,7 +176,12 @@ export class ExportModal extends Modal {
                     .onClick(async () => {
                         try {
                             const electron = (window as any).require('electron');
-                            const dialog = electron.remote ? electron.remote.dialog : electron.dialog;
+                            const remote = electron.remote;
+                            const dialog = remote ? remote.dialog : electron.dialog;
+
+                            if (!dialog) {
+                                throw new Error('Electron dialog is not available');
+                            }
 
                             const result = await dialog.showOpenDialog({
                                 properties: ['openDirectory'],
@@ -274,14 +279,16 @@ export class ExportModal extends Modal {
         const leaves = app.workspace?.getLeavesOfType?.('bases') || [];
         console.debug('[ExportBases] Open Bases leaves:', leaves.length);
         if (leaves.length > 0) {
-            const firstLeaf = leaves[0];
-            console.debug('[ExportBases] First leaf view keys:', Object.keys(firstLeaf.view || {}));
-            if (firstLeaf.view) {
+            const firstLeaf = leaves[0] as { view: BasesView } | undefined;
+            if (firstLeaf && firstLeaf.view) {
                 // The view might have the actual data
-                console.debug('[ExportBases] Leaf view file:', firstLeaf.view.file?.path);
-                if (firstLeaf.view.file?.path === base.file.path) {
-                    matchingBase = firstLeaf.view;
-                    console.debug('[ExportBases] MATCH! Found matching base view in workspace.');
+                console.debug('[ExportBases] First leaf view keys:', Object.keys(firstLeaf.view));
+                if (firstLeaf.view.file) {
+                    console.debug('[ExportBases] Leaf view file:', firstLeaf.view.file.path);
+                    if (firstLeaf.view.file.path === base.file.path) {
+                        matchingBase = firstLeaf.view;
+                        console.debug('[ExportBases] MATCH! Found matching base view in workspace.');
+                    }
                 }
             }
         }
@@ -372,8 +379,9 @@ export class ExportModal extends Modal {
                 // Find the leaf view for this base
                 const leaves = app.workspace.getLeavesOfType('bases') || [];
                 for (const l of leaves) {
-                    if (l.view?.file?.path === baseFile.path) {
-                        leafView = l.view;
+                    const view = l.view as BasesView;
+                    if (view?.file?.path === baseFile.path) {
+                        leafView = view;
                         console.debug('[ExportBases] Found opened Base leaf view.');
                         break;
                     }
@@ -382,7 +390,8 @@ export class ExportModal extends Modal {
                 if (!leafView) {
                     console.warn('[ExportBases] Could not find leaf view after opening Base. Using fallback...');
                     // Try getting from workspace active view
-                    const activeView = app.workspace.getActiveViewOfType(Object.values(app.viewRegistry.viewByType).find((v: any) => v?.prototype?.constructor?.name === 'BasesView') || null);
+                    const viewByType = app.viewRegistry?.viewByType;
+                    const activeView = viewByType ? app.workspace.getActiveViewOfType(Object.values(viewByType).find((v: any) => v?.prototype?.constructor?.name === 'BasesView') || null) : null;
                     if (activeView) {
                         leafView = activeView;
                     }
@@ -553,9 +562,13 @@ export class ExportModal extends Modal {
 
     async copyFileToExternalFolder(file: TFile, targetPath: string) {
         // Only run on desktop where fs is available
-        const electron = (window as any).require('electron');
-        const fs = electron.remote ? electron.remote.fs : (window as any).require('fs');
-        const path = electron.remote ? electron.remote.path : (window as any).require('path');
+        let fs, path;
+        try {
+            fs = (window as any).require('fs');
+            path = (window as any).require('path');
+        } catch (e) {
+            console.warn('[ExportBases] Could not load fs or path:', e);
+        }
 
         if (!fs || !path) {
             new Notice('File system access is not available (are you on mobile?)');
