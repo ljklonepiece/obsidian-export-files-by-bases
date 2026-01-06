@@ -1,0 +1,11 @@
+{
+    "id": "export-bases-files",
+    "name": "Export-Bases-Files",
+    "version": "0.1.0",
+    "minAppVersion": "1.7.0",
+    "description": "Export files filtered by Bases table views to a specified folder.",
+    "author": "Obsidian",
+    "authorUrl": "https://obsidian.md",
+    "fundingUrl": "https://obsidian.md/pricing",
+    "isDesktopOnly": false
+}
