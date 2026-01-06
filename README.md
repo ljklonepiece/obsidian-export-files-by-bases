@@ -1,90 +1,40 @@
-# Obsidian Sample Plugin
+# Obsidian Export-Bases-Files Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+**Export-Bases-Files** is an Obsidian plugin designed to bridge the gap between Obsidian's powerful internal **Bases** feature and your external file system. It allows you to export a specific set of files—filtered by your Bases Table Views—to any folder on your computer with just a few clicks.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Key Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- 🚀 **Strict Bases API Integration**: Unlike basic filtering, this plugin talks directly to the internal Bases engine. If it shows up in your Table View, it will show up in your export.
+- 🔍 **Smart Auto-Detection**: Automatically detects your active Base and Table View when you open the export interface, saving you from repetitive manual selection.
+- 🔄 **Programmatic View Switching**: Selecting a view in the export modal automatically switches your Bases tab to the correct view in the background to ensure data consistency.
+- 📂 **Automatic Base Management**: If you select a Base that isn't currently open, the plugin will automatically open it for you before processing the export.
+- 🖱️ **Native Directory Picker**: Includes a "Browse..." button to select your export destination using a familiar system folder dialog (Desktop only).
+- 🛡️ **Safe & Non-Destructive**: The plugin only *copies* files to your external folder. Your original notes in Obsidian are never moved or modified.
 
-## First time developing plugins?
+## How to Use
 
-Quick starting guide for new plugin devs:
+1. **Open the Interface**: Click the **Upload/Export** icon in the ribbon or use the command palette (`Cmd/Ctrl + P`) and search for `Export-Bases-Files: Open Export Interface`.
+2. **Select your Base**: Choose the `.base` file that contains the data you want to export.
+3. **Select your View**: Pick the specific Table View that has the filters you want to apply. 
+4. **Choose Destination**: Click **Browse...** to select where on your computer you want the files to go.
+5. **Export**: Hit the **Export** button. A notice will appear once the process is complete!
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## Installation
 
-## Releasing new releases
+### From GitHub Releases
+1. Download the latest `main.js`, `manifest.json`, and `styles.css` from the [Releases](https://github.com/your-username/obsidian-export-by-bases-plugin/releases) page.
+2. Create a folder named `obsidian-export-by-bases-plugin` inside your vault's `.obsidian/plugins/` directory.
+3. Move the downloaded files into that folder.
+4. Reload Obsidian and enable the plugin in **Settings > Community Plugins**.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## For Developers
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+If you want to build the plugin from source:
+1. Clone the repository.
+2. Run `npm install`.
+3. Run `npm run build` to generate the `main.js`.
+4. Run `npm test` to verify the logic with our unit test suite.
 
-## Adding your plugin to the community plugin list
+## Support
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://docs.obsidian.md
+If you encounter any issues or have feature requests, please open an issue on the [GitHub repository](https://github.com/your-username/obsidian-export-by-bases-plugin/issues).
