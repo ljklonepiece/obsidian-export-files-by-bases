@@ -7,7 +7,13 @@
 import { ExportModal } from '../ExportModal';
 import { TFile } from 'obsidian';
 
-// Mock Obsidian modules
+// Helper to capture and trigger UI callbacks
+const uiCallbacks: Record<string, any[]> = {};
+const captureCallback = (type: string, cb: any) => {
+    if (!uiCallbacks[type]) uiCallbacks[type] = [];
+    uiCallbacks[type].push(cb);
+};
+
 jest.mock('obsidian', () => ({
     Notice: jest.fn(),
     parseYaml: jest.fn((yaml: string) => {
@@ -25,9 +31,56 @@ jest.mock('obsidian', () => ({
         constructor(contentEl: any) { this.contentEl = contentEl; }
         setName = jest.fn().mockReturnThis();
         setDesc = jest.fn().mockReturnThis();
-        addDropdown = jest.fn().mockReturnThis();
-        addText = jest.fn().mockReturnThis();
-        addButton = jest.fn().mockReturnThis();
+        addDropdown = jest.fn().mockImplementation((fn) => {
+            const dropdown = {
+                addOption: jest.fn().mockReturnThis(),
+                setValue: jest.fn().mockReturnThis(),
+                onChange: jest.fn().mockImplementation((cb) => {
+                    captureCallback('dropdown.onChange', cb);
+                    return dropdown;
+                }),
+            };
+            fn(dropdown);
+            return this;
+        });
+        addSlider = jest.fn().mockImplementation((fn) => {
+            const slider = {
+                setLimits: jest.fn().mockReturnThis(),
+                setValue: jest.fn().mockReturnThis(),
+                setDynamicTooltip: jest.fn().mockReturnThis(),
+                onChange: jest.fn().mockImplementation((cb) => {
+                    captureCallback('slider.onChange', cb);
+                    return slider;
+                }),
+            };
+            fn(slider);
+            return this;
+        });
+        addText = jest.fn().mockImplementation((fn) => {
+            const text = {
+                setPlaceholder: jest.fn().mockReturnThis(),
+                setValue: jest.fn().mockReturnThis(),
+                onChange: jest.fn().mockImplementation((cb) => {
+                    captureCallback('text.onChange', cb);
+                    return text;
+                }),
+            };
+            fn(text);
+            return this;
+        });
+        addButton = jest.fn().mockImplementation((fn) => {
+            const button = {
+                setButtonText: jest.fn().mockReturnThis(),
+                setCta: jest.fn().mockReturnThis(),
+                setTooltip: jest.fn().mockReturnThis(),
+                onClick: jest.fn().mockImplementation((cb) => {
+                    captureCallback('button.onClick', cb);
+                    return button;
+                }),
+            };
+            fn(button);
+            return this;
+        });
     }
 }));
 
@@ -37,6 +90,9 @@ describe('ExportModal', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // Clear UI callbacks between tests
+        Object.keys(uiCallbacks).forEach(key => delete uiCallbacks[key]);
+
         app = {
             vault: {
                 getFiles: jest.fn().mockReturnValue([{ path: 'Untitled.base', basename: 'Untitled', extension: 'base', name: 'Untitled.base' }]),
@@ -47,7 +103,7 @@ describe('ExportModal', () => {
             },
             workspace: {
                 getLeavesOfType: jest.fn().mockReturnValue([]),
-                getLeaf: jest.fn().mockResolvedValue({ openFile: jest.fn() }),
+                getLeaf: jest.fn().mockReturnValue({ openFile: jest.fn() }),
                 getActiveViewOfType: jest.fn().mockReturnValue(null),
             },
             viewRegistry: {
@@ -113,7 +169,7 @@ describe('ExportModal', () => {
         };
 
         const base = { id: 'Untitled.base', file: { path: 'Untitled.base' } as TFile, name: 'Untitled' };
-        const viewInfo = { id: 'family', name: 'family', view: null, baseInstance: viewInstance };
+        const viewInfo = { id: 'family', name: 'family', view: {}, baseInstance: viewInstance as any };
 
         const files = await modal.getFilteredFiles(base, viewInfo);
 
@@ -145,7 +201,7 @@ describe('ExportModal', () => {
         });
 
         const base = { id: 'Untitled.base', file: { path: 'Untitled.base' } as TFile, name: 'Untitled' };
-        const viewInfo = { id: 'correct-view', name: 'correct-view', view: null, baseInstance: viewInstance };
+        const viewInfo = { id: 'correct-view', name: 'correct-view', view: {}, baseInstance: viewInstance as any };
 
         await modal.getFilteredFiles(base, viewInfo);
 
@@ -154,10 +210,10 @@ describe('ExportModal', () => {
 
     it('should open Base file if not already open', async () => {
         const openFileSpy = jest.fn();
-        (app.workspace.getLeaf as jest.Mock).mockResolvedValue({ openFile: openFileSpy });
+        (app.workspace.getLeaf as jest.Mock).mockReturnValue({ openFile: openFileSpy });
 
         const base = { id: 'Other.base', file: { path: 'Other.base' } as TFile, name: 'Other' };
-        const viewInfo = { id: 'family', name: 'family', view: null, baseInstance: null };
+        const viewInfo = { id: 'family', name: 'family', view: {}, baseInstance: null };
 
         // Mock getting leaves AFTER opening (second call)
         (app.workspace.getLeavesOfType as jest.Mock).mockImplementation(() => {
@@ -179,6 +235,89 @@ describe('ExportModal', () => {
 
     it('should handle directory selection via Browse button', async () => {
         await modal.display();
-        expect(typeof app.workspace.getLeavesOfType).toBe('function');
+        const browseButton = uiCallbacks['button.onClick']?.find(cb => cb.toString().includes('showOpenDialog'));
+        expect(browseButton).toBeDefined();
+    });
+
+    it('should synchronize Slider and Text input for exportDepth', async () => {
+        // Reset callbacks for this test
+        Object.keys(uiCallbacks).forEach(key => delete uiCallbacks[key]);
+
+        await modal.display();
+
+        // Find slider onChange
+        const sliderOnChange = uiCallbacks['slider.onChange']?.[0];
+        const textOnChange = uiCallbacks['text.onChange']?.[0];
+
+        expect(sliderOnChange).toBeDefined();
+        expect(textOnChange).toBeDefined();
+
+        // 1. Slider change updates state and triggers re-display
+        await sliderOnChange(4);
+        expect(modal.exportDepth).toBe(4);
+
+        // After re-display, we need to find the NEW callbacks because re-rendering replaces the old ones
+        const latestTextOnChange = uiCallbacks['text.onChange']?.[uiCallbacks['text.onChange'].length - 1];
+        expect(latestTextOnChange).toBeDefined();
+
+        // 2. Text change updates state and triggers re-display
+        await latestTextOnChange("1");
+        expect(modal.exportDepth).toBe(1);
+
+        // Fetch again after second re-display
+        const finalTextOnChange = uiCallbacks['text.onChange']?.[uiCallbacks['text.onChange'].length - 1];
+
+        // 3. Infinite depth (-1)
+        await finalTextOnChange("-1");
+        expect(modal.exportDepth).toBe(-1);
+    });
+
+    it('should reset view selection when base changes', async () => {
+        modal.selectedBase = { id: 'b1', name: 'Base 1', file: { path: 'b1.base' } as any };
+        modal.selectedView = { id: 'v1', name: 'View 1', view: {}, baseInstance: null };
+
+        await modal.display();
+
+        const baseDropdownOnChange = uiCallbacks['dropdown.onChange']?.[0];
+        expect(baseDropdownOnChange).toBeDefined();
+
+        // Trigger base change
+        await baseDropdownOnChange("Untitled.base");
+
+        expect(modal.selectedBase?.id).toBe("Untitled.base");
+        expect(modal.selectedView).toBeNull();
+    });
+
+    it('should execute full export lifecycle successfully', async () => {
+        // Setup state
+        modal.selectedBase = { id: 'b1', name: 'B1', file: { path: 'b1.base' } as any };
+        modal.selectedView = { id: 'v1', name: 'V1', view: {}, baseInstance: {} as any };
+        modal.targetPath = "/export/path";
+
+        // Spies
+        const getFilteredFilesSpy = jest.spyOn(modal, 'getFilteredFiles').mockResolvedValue([{
+            path: 'f1.md',
+            name: 'f1.md',
+            parent: { path: '/' }
+        } as any]);
+        const resolveLinkedFilesSpy = jest.spyOn(modal, 'resolveLinkedFilesRecursive').mockReturnValue(new Set([{
+            path: 'f1.md',
+            name: 'f1.md'
+        } as any]));
+        const copyFileSpy = jest.spyOn(modal, 'copyFileToExternalFolder').mockResolvedValue();
+
+        await modal.display();
+
+        // Find Export button - it's the last one added in display()
+        const exportButton = uiCallbacks['button.onClick']?.[uiCallbacks['button.onClick'].length - 1];
+        expect(exportButton).toBeDefined();
+
+        // Click Export and wait for completion
+        await exportButton();
+
+        expect(getFilteredFilesSpy).toHaveBeenCalled();
+        expect(resolveLinkedFilesSpy).toHaveBeenCalled();
+        expect(copyFileSpy).toHaveBeenCalledWith(expect.anything(), "/export/path");
+        // Verify success notice logic (implicitly verified if no throw)
     });
 });
