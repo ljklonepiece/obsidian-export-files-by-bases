@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-01-07
+
+### Fixed
+- **Depth Validation**: Prevented export depth from being set to 0 or invalid negative values. The minimum depth is now enforced at 1 (or -1 for infinite).
+
+## [1.2.0] - 2026-01-07
+
+### Added
+- **File Type Filtering**: Added toggles to include/exclude internal files (`.base`, `.canvas`) and media files (images, audio, video, etc.) during export.
+- **Default Exclusions**: Linked internal and media files are now excluded by default to keep exports clean.
+- **Behavioral Toggles Mock**: Added `addToggle` support to the unit test suite for state synchronization verification.
+
 ## [1.1.0] - 2026-01-07
 
 ### Added

@@ -68,6 +68,17 @@ jest.mock('obsidian', () => ({
             fn(text);
             return this;
         });
+        addToggle = jest.fn().mockImplementation((fn) => {
+            const toggle = {
+                setValue: jest.fn().mockReturnThis(),
+                onChange: jest.fn().mockImplementation((cb) => {
+                    captureCallback('toggle.onChange', cb);
+                    return toggle;
+                }),
+            };
+            fn(toggle);
+            return this;
+        });
         addButton = jest.fn().mockImplementation((fn) => {
             const button = {
                 setButtonText: jest.fn().mockReturnThis(),
@@ -270,6 +281,37 @@ describe('ExportModal', () => {
         // 3. Infinite depth (-1)
         await finalTextOnChange("-1");
         expect(modal.exportDepth).toBe(-1);
+
+        // 4. Invalid depth (0) should default to 1
+        await finalTextOnChange("0");
+        expect(modal.exportDepth).toBe(1);
+
+        // 5. Negative depth other than -1 should default to 1
+        await finalTextOnChange("-2");
+        expect(modal.exportDepth).toBe(1);
+    });
+
+    it('should synchronize Toggles for internal and media files', async () => {
+        await modal.display();
+
+        // Find toggles - Internal is the first toggle, Media is the second
+        const internalToggleOnChange = uiCallbacks['toggle.onChange']?.[0];
+        const mediaToggleOnChange = uiCallbacks['toggle.onChange']?.[1];
+
+        expect(internalToggleOnChange).toBeDefined();
+        expect(mediaToggleOnChange).toBeDefined();
+
+        // 1. Internal Toggle
+        await internalToggleOnChange(true);
+        expect(modal.includeInternalFiles).toBe(true);
+
+        // 2. Media Toggle
+        await mediaToggleOnChange(true);
+        expect(modal.includeMediaFiles).toBe(true);
+
+        // 3. Toggle off
+        await internalToggleOnChange(false);
+        expect(modal.includeInternalFiles).toBe(false);
     });
 
     it('should reset view selection when base changes', async () => {

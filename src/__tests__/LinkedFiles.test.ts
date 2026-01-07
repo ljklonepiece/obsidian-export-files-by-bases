@@ -42,8 +42,53 @@ describe('ExportModal - resolveLinkedFilesRecursive', () => {
         const file = new TFile();
         (file as any).path = path;
         (file as any).name = path.split('/').pop();
+        (file as any).extension = path.split('.').pop();
         return file;
     };
+
+    describe('File type filtering', () => {
+        const file1 = createMockFile('file1.md');
+        const mediaFile = createMockFile('image.png');
+        const internalFile = createMockFile('base.base');
+        const noteFile = createMockFile('note.md');
+
+        beforeEach(() => {
+            app.metadataCache.resolvedLinks = {
+                'file1.md': { 'image.png': 1, 'base.base': 1, 'note.md': 1 }
+            };
+            app.vault.getAbstractFileByPath.mockImplementation((path: string) => {
+                if (path === 'image.png') return mediaFile;
+                if (path === 'base.base') return internalFile;
+                if (path === 'note.md') return noteFile;
+                return null;
+            });
+            modal.includeInternalFiles = false;
+            modal.includeMediaFiles = false;
+        });
+
+        it('should filter out media and internal files by default', () => {
+            const result = modal.resolveLinkedFilesRecursive([file1], 2);
+            expect(result.size).toBe(2); // file1 and note.md
+            expect(result.has(file1)).toBe(true);
+            expect(result.has(noteFile)).toBe(true);
+            expect(result.has(mediaFile)).toBe(false);
+            expect(result.has(internalFile)).toBe(false);
+        });
+
+        it('should include internal files when enabled', () => {
+            modal.includeInternalFiles = true;
+            const result = modal.resolveLinkedFilesRecursive([file1], 2);
+            expect(result.has(internalFile)).toBe(true);
+            expect(result.has(mediaFile)).toBe(false);
+        });
+
+        it('should include media files when enabled', () => {
+            modal.includeMediaFiles = true;
+            const result = modal.resolveLinkedFilesRecursive([file1], 2);
+            expect(result.has(mediaFile)).toBe(true);
+            expect(result.has(internalFile)).toBe(false);
+        });
+    });
 
     it('should handle depth 1', () => {
         const file1 = createMockFile('file1.md');

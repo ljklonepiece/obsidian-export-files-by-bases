@@ -7,6 +7,14 @@
 /* eslint-disable obsidianmd/ui/sentence-case */
 import { App, Modal, Setting, Notice, parseYaml, TFile } from 'obsidian';
 
+const INTERNAL_EXTENSIONS = ['base', 'canvas'];
+const MEDIA_EXTENSIONS = [
+    'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp',
+    'mp4', 'webm', 'ogv',
+    'mp3', 'wav', 'm4a', 'ogg', '3gp', 'flac',
+    'pdf', 'zip', 'gz', '7z', 'rar'
+];
+
 interface BaseInfo {
     id: string;
     name: string;
@@ -78,6 +86,8 @@ export class ExportModal extends Modal {
     selectedView: ViewInfo | null = null;
     targetPath = "";
     exportDepth = 2;
+    includeInternalFiles = false;
+    includeMediaFiles = false;
     _autoDetectedViewName?: string;
 
     constructor(app: App) {
@@ -224,11 +234,13 @@ export class ExportModal extends Modal {
                 .setPlaceholder('Depth Level')
                 .setValue(this.exportDepth.toString())
                 .onChange(async (value) => {
-                    const num = parseInt(value);
+                    let num = parseInt(value);
                     if (!isNaN(num)) {
+                        // Enforce depth >= 1 or -1
+                        if (num < 1 && num !== -1) {
+                            num = 1;
+                        }
                         this.exportDepth = num;
-                        // We don't necessarily need to refresh the whole display for just the slider sync if we do it carefully, 
-                        // but display() is safe and consistent.
                         await this.display();
                     }
                 }));
@@ -237,7 +249,26 @@ export class ExportModal extends Modal {
                 contentEl.createEl('span', { text: 'Infinite depth enabled: all reachable notes will be exported.', cls: 'setting-item-description', attr: { style: 'color: var(--text-accent); display: block; margin-top: -10px; margin-bottom: 10px; padding-left: 20px;' } });
             }
 
-            // 5. Export Button
+            // 5. File Type Filters
+            new Setting(contentEl)
+                .setName('Include internal files')
+                .setDesc('Include Obsidian internal files like .base, .canvas')
+                .addToggle(toggle => toggle
+                    .setValue(this.includeInternalFiles)
+                    .onChange(value => {
+                        this.includeInternalFiles = value;
+                    }));
+
+            new Setting(contentEl)
+                .setName('Include media files')
+                .setDesc('Include images, videos, audio, and other attachments')
+                .addToggle(toggle => toggle
+                    .setValue(this.includeMediaFiles)
+                    .onChange(value => {
+                        this.includeMediaFiles = value;
+                    }));
+
+            // 6. Export Button
             new Setting(contentEl)
                 .addButton(button => button
                     .setButtonText('Export')
@@ -371,6 +402,13 @@ export class ExportModal extends Modal {
                     for (const linkPath of Object.keys(links)) {
                         const linkedFile = this.app.vault.getAbstractFileByPath(linkPath);
                         if (linkedFile instanceof TFile && !result.has(linkedFile)) {
+                            const ext = linkedFile.extension.toLowerCase();
+                            const isInternal = INTERNAL_EXTENSIONS.includes(ext);
+                            const isMedia = MEDIA_EXTENSIONS.includes(ext);
+
+                            if (!this.includeInternalFiles && isInternal) continue;
+                            if (!this.includeMediaFiles && isMedia) continue;
+
                             result.add(linkedFile);
                             nextLevelFiles.push(linkedFile);
                         }
