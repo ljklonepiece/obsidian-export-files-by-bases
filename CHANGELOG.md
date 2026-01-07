@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-01-07
+### Added
+- Internationalization support for Japanese (`ja`) and Korean (`ko`).
+
+## [1.3.0] - 2026-01-07
+### Added
+- Internationalization (i18n) support for English and Chinese (Simplified).
+- Centralized translation framework in `src/i18n.ts`.
+- Recursive string interpolation support for localized messages.
+- Localized ribbon tooltip, command names, settings, and all Export Modal UI elements.
+
 ## [1.2.1] - 2026-01-07
 
 ### Fixed

@@ -6,6 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable obsidianmd/ui/sentence-case */
 import { App, Modal, Setting, Notice, parseYaml, TFile } from 'obsidian';
+import { t } from './i18n';
 
 const INTERNAL_EXTENSIONS = ['base', 'canvas'];
 const MEDIA_EXTENSIONS = [
@@ -97,7 +98,7 @@ export class ExportModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: 'Export bases files' });
+        contentEl.createEl('h2', { text: t('MODAL_TITLE') });
 
         void this.display();
     }
@@ -105,7 +106,7 @@ export class ExportModal extends Modal {
     async display() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: 'Export bases files' });
+        contentEl.createEl('h2', { text: t('MODAL_TITLE') });
 
         try {
             // Fetch data upfront to avoid async race conditions in dropdowns
@@ -136,10 +137,10 @@ export class ExportModal extends Modal {
 
             // 1. Select Base
             new Setting(contentEl)
-                .setName('Select base')
-                .setDesc('Select the base you want to export from')
+                .setName(t('SELECT_BASE'))
+                .setDesc(t('SELECT_BASE_DESC'))
                 .addDropdown((dropdown) => {
-                    dropdown.addOption("", "Select a base");
+                    dropdown.addOption("", t('SELECT_BASE'));
                     bases.forEach((base) => {
                         dropdown.addOption(base.id, base.name);
                     });
@@ -164,10 +165,10 @@ export class ExportModal extends Modal {
                 }
 
                 new Setting(contentEl)
-                    .setName('Select view')
-                    .setDesc('Select the table view containing the filtering logic')
+                    .setName(t('SELECT_VIEW'))
+                    .setDesc(t('SELECT_VIEW_DESC'))
                     .addDropdown((dropdown) => {
-                        dropdown.addOption("", "Select a view");
+                        dropdown.addOption("", t('SELECT_VIEW'));
                         views.forEach((view) => {
                             dropdown.addOption(view.id, view.name);
                         });
@@ -180,17 +181,17 @@ export class ExportModal extends Modal {
 
             // 3. Specify Target Folder
             new Setting(contentEl)
-                .setName('Export to')
-                .setDesc('Specify the target folder for exported files')
+                .setName(t('EXPORT_PATH'))
+                .setDesc(t('EXPORT_PATH_DESC'))
                 .addText(text => text
-                    .setPlaceholder('path/to/folder')
+                    .setPlaceholder(t('PATH_INPUT_PLACEHOLDER'))
                     .setValue(this.targetPath)
                     .onChange((value) => {
                         this.targetPath = value;
                     }))
                 .addButton(button => button
-                    .setButtonText('Browse...')
-                    .setTooltip('Select export directory')
+                    .setButtonText(t('BROWSE_BUTTON'))
+                    .setTooltip(t('BROWSE_TOOLTIP'))
                     .onClick(async () => {
                         try {
                             const electron = (window as any).require('electron');
@@ -203,7 +204,7 @@ export class ExportModal extends Modal {
 
                             const result = await dialog.showOpenDialog({
                                 properties: ['openDirectory', 'createDirectory'],
-                                title: 'Select export directory'
+                                title: t('PICKER_TITLE')
                             });
 
                             if (!result.canceled && result.filePaths.length > 0) {
@@ -212,14 +213,14 @@ export class ExportModal extends Modal {
                             }
                         } catch (err) {
                             console.error('Error opening directory picker:', err);
-                            new Notice('Could not open directory picker. Please enter path manually.');
+                            new Notice(t('ERROR_PICKER'));
                         }
                     }));
 
             // 4. Specify Export Depth
             const depthSetting = new Setting(contentEl)
-                .setName('Export depth')
-                .setDesc('1: only filtered files, 2: include links from filtered files, etc. Enter -1 for infinite depth.');
+                .setName(t('EXPORT_DEPTH'))
+                .setDesc(t('EXPORT_DEPTH_DESC'));
 
             depthSetting.addSlider(slider => slider
                 .setLimits(1, 5, 1)
@@ -231,7 +232,7 @@ export class ExportModal extends Modal {
                 }));
 
             depthSetting.addText(text => text
-                .setPlaceholder('Depth Level')
+                .setPlaceholder(t('DEPTH_PLACEHOLDER'))
                 .setValue(this.exportDepth.toString())
                 .onChange(async (value) => {
                     let num = parseInt(value);
@@ -246,13 +247,13 @@ export class ExportModal extends Modal {
                 }));
 
             if (this.exportDepth === -1) {
-                contentEl.createEl('span', { text: 'Infinite depth enabled: all reachable notes will be exported.', cls: 'setting-item-description', attr: { style: 'color: var(--text-accent); display: block; margin-top: -10px; margin-bottom: 10px; padding-left: 20px;' } });
+                contentEl.createEl('span', { text: t('INFINITE_DEPTH_NOTICE'), cls: 'setting-item-description', attr: { style: 'color: var(--text-accent); display: block; margin-top: -10px; margin-bottom: 10px; padding-left: 20px;' } });
             }
 
             // 5. File Type Filters
             new Setting(contentEl)
-                .setName('Include internal files')
-                .setDesc('Include Obsidian internal files like .base, .canvas')
+                .setName(t('INCLUDE_INTERNAL'))
+                .setDesc(t('INCLUDE_INTERNAL_DESC'))
                 .addToggle(toggle => toggle
                     .setValue(this.includeInternalFiles)
                     .onChange(value => {
@@ -260,8 +261,8 @@ export class ExportModal extends Modal {
                     }));
 
             new Setting(contentEl)
-                .setName('Include media files')
-                .setDesc('Include images, videos, audio, and other attachments')
+                .setName(t('INCLUDE_MEDIA'))
+                .setDesc(t('INCLUDE_MEDIA_DESC'))
                 .addToggle(toggle => toggle
                     .setValue(this.includeMediaFiles)
                     .onChange(value => {
@@ -271,11 +272,11 @@ export class ExportModal extends Modal {
             // 6. Export Button
             new Setting(contentEl)
                 .addButton(button => button
-                    .setButtonText('Export')
+                    .setButtonText(t('EXPORT_BUTTON'))
                     .setCta()
                     .onClick(async () => {
                         if (!this.selectedBase || !this.selectedView || !this.targetPath) {
-                            new Notice('Please complete all selection fields.');
+                            new Notice(t('NOTICE_COMPLETE_FIELDS'));
                             return;
                         }
                         await this.exportFiles();
@@ -283,7 +284,7 @@ export class ExportModal extends Modal {
                     }));
         } catch (e) {
             console.error('Error in ExportModal.display:', e);
-            contentEl.createEl('div', { text: 'An error occurred while loading the interface. Check console for details.', cls: 'error-message' });
+            contentEl.createEl('div', { text: t('ERROR_UI_LOAD'), cls: 'error-message' });
         }
     }
 
@@ -345,7 +346,7 @@ export class ExportModal extends Modal {
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : String(e);
             console.error('[ExportBases] Error in getViews:', message);
-            new Notice(`Failed to read base views: ${message}`);
+            new Notice(t('ERROR_READ_VIEWS', { message }));
         }
 
         return [];
@@ -359,13 +360,13 @@ export class ExportModal extends Modal {
     async exportFiles() {
         if (!this.selectedBase || !this.selectedView || !this.targetPath) return;
 
-        new Notice(`Exporting files from ${this.selectedBase.name}...`);
+        new Notice(t('NOTICE_EXPORTING', { base: this.selectedBase.name }));
 
         try {
             // Pass the whole selectedView object which now carries baseInstance and id
             const initialFiles = await this.getFilteredFiles(this.selectedBase, this.selectedView);
             if (initialFiles.length === 0) {
-                new Notice('No files found matching the view filters.');
+                new Notice(t('NOTICE_NO_FILES'));
                 return;
             }
 
@@ -377,10 +378,10 @@ export class ExportModal extends Modal {
                 exportedCount++;
             }
 
-            new Notice(`Successfully exported ${exportedCount} files to ${this.targetPath}.`);
+            new Notice(t('NOTICE_EXPORT_SUCCESS', { count: exportedCount, path: this.targetPath }));
         } catch (error) {
             console.error('Export failed:', error);
-            new Notice('Export failed. See console for details.');
+            new Notice(t('NOTICE_EXPORT_FAILED'));
         }
     }
 
@@ -469,7 +470,7 @@ export class ExportModal extends Modal {
         }
 
         if (!leafView) {
-            new Notice('Please open the Base file first.');
+            new Notice(t('NOTICE_OPEN_BASE'));
             return [];
         }
 
@@ -505,7 +506,7 @@ export class ExportModal extends Modal {
                 // Check if it worked
                 const newActiveView = controller.viewName;
                 if (newActiveView !== viewInfo.name) {
-                    new Notice(`Please switch to the "${viewInfo.name}" view in the Bases tab manually.`);
+                    new Notice(t('NOTICE_SWITCH_VIEW', { view: viewInfo.name }));
                     return [];
                 }
             }
@@ -562,7 +563,7 @@ export class ExportModal extends Modal {
         }
 
         if (!fs || !path) {
-            new Notice('File system access is not available (are you on mobile?)');
+            new Notice(t('ERROR_FS_ACCESS'));
             return;
         }
 
