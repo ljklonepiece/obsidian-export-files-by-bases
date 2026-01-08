@@ -53,4 +53,9 @@ If you want to build the plugin from source:
 
 ## Support
 
+If you find this plugin helpful, you can support my work:
+
+中国用户：
+<img src="./assets/donation-qr-cn.jpg" width="300" alt="Support via WeChat/Alipay" />
+
 If you encounter any issues or have feature requests, please open an issue on the [GitHub repository](https://github.com/ljklonepiece/obsidian-export-files-by-bases/issues).
