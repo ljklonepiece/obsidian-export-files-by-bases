@@ -55,6 +55,8 @@ If you want to build the plugin from source:
 
 If you find this plugin helpful, you can support my work:
 
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/ljklonepiece)
+
 中国用户：
 <img src="./assets/donation-qr-cn.jpg" width="300" alt="Support via WeChat/Alipay" />
 
