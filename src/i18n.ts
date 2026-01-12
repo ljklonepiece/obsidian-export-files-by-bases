@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { moment } from 'obsidian';
 
 export const locales = {
@@ -200,17 +195,34 @@ export const locales = {
     }
 } as const;
 
-const locale = (typeof window !== 'undefined' && (window as any).localStorage?.getItem('language')) ||
-    (typeof moment !== 'undefined' ? moment.locale() : 'en');
+const getLocale = (): string => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    const lang = (window as any).app?.locale;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    if (lang) return lang;
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem('language');
+        if (stored) return stored;
+    }
+    return typeof moment !== 'undefined' ? moment.locale() : 'en';
+};
+
+const locale = getLocale();
 
 export function t(key: keyof typeof locales.en, vars?: Record<string, string | number>): string {
-    const localeMap: any = locales;
-    const currentLocale = localeMap[locale] || locales.en;
-    let text = currentLocale[key] || (locales.en as any)[key] || key;
+    const localeKey = locale in locales ? (locale as keyof typeof locales) : 'en';
+    const currentLocale = locales[localeKey];
+
+    // Fallback to English if translation missing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    let text: string = (currentLocale as any)[key] || locales.en[key] || key;
 
     if (vars) {
         Object.keys(vars).forEach(v => {
-            text = text.replace(`{{${v}}}`, String(vars[v]));
+            const val = vars[v];
+            text = text.replace(`{{${v}}}`, String(val));
         });
     }
 

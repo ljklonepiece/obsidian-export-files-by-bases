@@ -1,11 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { App, Modal, Setting, Notice, parseYaml, TFile } from 'obsidian';
 import { t } from './i18n';
+
+// Extend Window to include electron require
+declare global {
+    interface Window {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        require(module: string): any;
+    }
+}
 
 const INTERNAL_EXTENSIONS = ['base', 'canvas'];
 const MEDIA_EXTENSIONS = [
@@ -29,18 +31,25 @@ interface ViewInfo {
 }
 
 interface BasesController {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
     viewName?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryState?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ctx?: any;
     selectView?(name: string): void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setQueryAndView?(a: any, b: string): void;
     viewHeaderEl?: HTMLElement;
     viewContainerEl?: HTMLElement;
     view?: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data?: { data?: any[] };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rows?: any[];
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     _children?: any[];
 }
 
@@ -52,11 +61,13 @@ interface BasesView {
 
 interface BasesPlugin {
     enabled: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     instance?: any;
 }
 
 interface FSModule {
     promises: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         writeFile(path: string, data: any): Promise<void>;
         mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
     };
@@ -77,6 +88,7 @@ interface ExtendedApp extends App {
         plugins: Record<string, BasesPlugin>;
     };
     viewRegistry?: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         viewByType: Record<string, any>;
     };
 }
@@ -193,20 +205,26 @@ export class ExportModal extends Modal {
                     .setTooltip(t('BROWSE_TOOLTIP'))
                     .onClick(async () => {
                         try {
-                            const electron = (window as any).require('electron');
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                            const electron = window.require('electron');
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                             const remote = electron.remote;
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
                             const dialog = remote ? remote.dialog : electron.dialog;
 
                             if (!dialog) {
                                 throw new Error('Electron dialog is not available');
                             }
 
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
                             const result = await dialog.showOpenDialog({
                                 properties: ['openDirectory', 'createDirectory'],
                                 title: t('PICKER_TITLE')
                             });
 
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                             if (!result.canceled && result.filePaths.length > 0) {
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
                                 this.targetPath = result.filePaths[0];
                                 await this.display();
                             }
@@ -331,11 +349,14 @@ export class ExportModal extends Modal {
             const data = (parseYaml(content) as { views?: Record<string, unknown> | Array<Record<string, unknown>> }) || {};
 
             if (data && data.views) {
-                const viewsArray = Array.isArray(data.views) ? data.views : Object.entries(data.views).map(([id, view]) => ({ ...(view as any), id }));
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const viewsArray = Array.isArray(data.views) ? data.views : Object.entries(data.views).map(([id, view]) => ({ ...(view as any), id })); // eslint-disable-line @typescript-eslint/no-unsafe-return
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 return viewsArray.map((view: any, index: number) => ({
-                    id: (view.id as string) || `view-${index}`,
-                    name: (view.name as string) || (view.id as string) || `View ${index + 1}`,
+                    id: (view.id as string) || `view-${index}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access
+                    name: (view.name as string) || (view.id as string) || `View ${index + 1}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     view: view,
                     baseInstance: matchingBase
                 }));
@@ -458,6 +479,7 @@ export class ExportModal extends Modal {
                 if (!leafView) {
                     // Try getting from workspace active view
                     const viewByType = app.viewRegistry?.viewByType;
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
                     const activeView = viewByType ? app.workspace.getActiveViewOfType(Object.values(viewByType).find((v: any) => v?.prototype?.constructor?.name === 'BasesView') || null) : null;
                     if (activeView) {
                         leafView = activeView;
@@ -507,24 +529,23 @@ export class ExportModal extends Modal {
                     return [];
                 }
             }
-
             if (controller.view) {
                 // The actual results are in controller.view.data.data
                 if (controller.view.data && controller.view.data.data && Array.isArray(controller.view.data.data)) {
                     const results = controller.view.data.data;
-                    return results.map((r: any) => {
+                    return results.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
-                        return r.file || r;
-                    }).filter((f: any) => f && f.path);
+                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
                 }
 
                 // Also check controller.view.rows
                 if (controller.view.rows && Array.isArray(controller.view.rows)) {
                     const rows = controller.view.rows;
-                    return rows.map((r: any) => {
+                    return rows.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
-                        return r.file || r;
-                    }).filter((f: any) => f && f.path);
+                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
                 }
             }
 
@@ -534,9 +555,12 @@ export class ExportModal extends Modal {
                 const rows = viewContainer.querySelectorAll('.bases-row, tr[data-file], .table-row');
                 if (rows.length > 0) {
                     const files: TFile[] = [];
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     rows.forEach((row: any) => {
-                        const filePath = row.dataset?.file || row.getAttribute('data-file');
+                        const filePath = row.dataset?.file || row.getAttribute('data-file'); // eslint-disable-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+
                         if (filePath) {
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                             const file = this.app.vault.getAbstractFileByPath(filePath);
                             if (file instanceof TFile) files.push(file);
                         }
@@ -553,8 +577,10 @@ export class ExportModal extends Modal {
         let fs: FSModule | undefined;
         let path: PathModule | undefined;
         try {
-            fs = (window as any).require('fs');
-            path = (window as any).require('path');
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            fs = window.require('fs');
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            path = window.require('path');
         } catch (e) {
             console.warn('[ExportBases] Could not load fs or path:', e);
         }
