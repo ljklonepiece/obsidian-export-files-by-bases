@@ -1,11 +1,11 @@
 {
     "id": "export-bases-files",
-    "name": "Export-Bases-Files",
+    "name": "Export Bases Files",
     "version": "1.3.0",
     "minAppVersion": "1.7.0",
     "description": "Export files filtered by Bases table views to a specified folder.",
     "author": "Juekun Li",
-    "authorUrl": "https://github.com/ljklonepiece/obsidian-export-files-by-bases",
+    "authorUrl": "",
     "fundingUrl": "https://buymeacoffee.com/ljklonepiece",
     "isDesktopOnly": true
 }
