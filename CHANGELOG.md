@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.3.0] - 2026-01-07
+## [1.3.0] - 2026-01-12
 ### Added
 - Comprehensive internationalization (i18n) support for **English**, **Chinese (Simplified)**, **Japanese**, and **Korean**.
 - Centralized translation framework in `src/i18n.ts` with recursive string interpolation.
-- Full localization of the Ribbon icon, Command Palette, Settings tab, and all Export Modal UI elements (including notices and error messages).
+- Full localization of the Ribbon icon, Command Palette, Settings tab, and all Export Modal UI elements.
+- **Funding URL**: Added a link to "Buy Me a Coffee" in the manifest.
+
+### Removed
+- **Settings Tab**: Removed the configuration interface as the plugin currently requires no user settings.
+- **Unused Assets**: Removed `styles.css` and cleaned up unused localization keys.
+
+### Fixed
+- **Submission Readiness**: Updated License copyright and removed development-only console logs to comply with Community Plugin submission guidelines.
 
 ## [1.2.1] - 2026-01-07
 

@@ -12,10 +12,7 @@ export const locales = {
         COMMAND_NAME: 'Open export interface',
 
         // settings.ts
-        SETTINGS_HEADER: 'Export Bases Files Settings',
-        SETTINGS_EXAMPLE_NAME: 'Settings #1',
-        SETTINGS_EXAMPLE_DESC: "It's a secret",
-        SETTINGS_EXAMPLE_PLACEHOLDER: 'Enter your secret',
+
 
         // ExportModal.ts - Header
         MODAL_TITLE: 'Export bases files',
@@ -63,10 +60,7 @@ export const locales = {
         COMMAND_NAME: '打开导出界面',
 
         // settings.ts
-        SETTINGS_HEADER: '导出 Bases 文件设置',
-        SETTINGS_EXAMPLE_NAME: '设置 #1',
-        SETTINGS_EXAMPLE_DESC: '这是一个秘密',
-        SETTINGS_EXAMPLE_PLACEHOLDER: '输入你的秘密',
+
 
         // ExportModal.ts - Header
         MODAL_TITLE: '导出 Bases 文件',
@@ -114,10 +108,7 @@ export const locales = {
         COMMAND_NAME: 'エクスポートインターフェースを開く',
 
         // settings.ts
-        SETTINGS_HEADER: 'Export Bases Files 設定',
-        SETTINGS_EXAMPLE_NAME: '設定 #1',
-        SETTINGS_EXAMPLE_DESC: '内密です',
-        SETTINGS_EXAMPLE_PLACEHOLDER: '秘密を入力してください',
+
 
         // ExportModal.ts - Header
         MODAL_TITLE: 'Basesファイルをエクスポート',
@@ -165,10 +156,7 @@ export const locales = {
         COMMAND_NAME: '내보내기 인터페이스 열기',
 
         // settings.ts
-        SETTINGS_HEADER: 'Export Bases Files 설정',
-        SETTINGS_EXAMPLE_NAME: '설정 #1',
-        SETTINGS_EXAMPLE_DESC: '비밀입니다',
-        SETTINGS_EXAMPLE_PLACEHOLDER: '비밀을 입력하세요',
+
 
         // ExportModal.ts - Header
         MODAL_TITLE: 'Bases 파일 내보내기',

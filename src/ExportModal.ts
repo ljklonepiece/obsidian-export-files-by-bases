@@ -4,7 +4,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable obsidianmd/ui/sentence-case */
 import { App, Modal, Setting, Notice, parseYaml, TFile } from 'obsidian';
 import { t } from './i18n';
 
@@ -294,14 +293,12 @@ export class ExportModal extends Modal {
         // Try both internal and third-party plugin locations
         const basesPlugin = app.internalPlugins?.getPluginById('bases') || app.plugins?.getPlugin('bases');
 
-        if (basesPlugin && basesPlugin.enabled) {
-            console.debug('[ExportBases] Bases plugin detected.');
-        } else {
+        if (!basesPlugin || !basesPlugin.enabled) {
             console.warn('[ExportBases] Bases plugin not found or not enabled.');
         }
 
+
         const files = this.app.vault.getFiles().filter(f => f.extension === 'base');
-        console.debug('Found .base files:', files);
 
         return files.map(file => ({
             id: file.path,
