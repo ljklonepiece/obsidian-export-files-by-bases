@@ -536,7 +536,7 @@ export class ExportModal extends Modal {
                     return results.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
                         return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
                 }
 
                 // Also check controller.view.rows
@@ -545,7 +545,7 @@ export class ExportModal extends Modal {
                     return rows.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
                         return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
                 }
             }
 
