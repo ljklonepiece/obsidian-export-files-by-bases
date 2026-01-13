@@ -196,10 +196,10 @@ export const locales = {
 } as const;
 
 const getLocale = (): string => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- access Obsidian app locale
     const lang = (window as any).app?.locale;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- return unknown locale string
     if (lang) return lang;
 
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -216,7 +216,7 @@ export function t(key: keyof typeof locales.en, vars?: Record<string, string | n
     const currentLocale = locales[localeKey];
 
     // Fallback to English if translation missing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- dynamic translation lookup
     let text: string = (currentLocale as any)[key] || locales.en[key] || key;
 
     if (vars) {

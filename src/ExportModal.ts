@@ -4,7 +4,7 @@ import { t } from './i18n';
 // Extend Window to include electron require
 declare global {
     interface Window {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Use any for electron require as it's not typed here
         require(module: string): any;
     }
 }
@@ -31,25 +31,25 @@ interface ViewInfo {
 }
 
 interface BasesController {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Controller properties are dynamic from Bases plugin
     [key: string]: any;
     viewName?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- state is dynamic
     queryState?: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ctx is dynamic
     ctx?: any;
     selectView?(name: string): void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic arguments from Bases
     setQueryAndView?(a: any, b: string): void;
     viewHeaderEl?: HTMLElement;
     viewContainerEl?: HTMLElement;
     view?: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic data structure
         data?: { data?: any[] };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic row data
         rows?: any[];
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal children
     _children?: any[];
 }
 
@@ -61,13 +61,13 @@ interface BasesView {
 
 interface BasesPlugin {
     enabled: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic instance from Obsidian
     instance?: any;
 }
 
 interface FSModule {
     promises: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Node fs data can be various types
         writeFile(path: string, data: any): Promise<void>;
         mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
     };
@@ -88,7 +88,7 @@ interface ExtendedApp extends App {
         plugins: Record<string, BasesPlugin>;
     };
     viewRegistry?: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal Obsidian view registry
         viewByType: Record<string, any>;
     };
 }
@@ -205,26 +205,26 @@ export class ExportModal extends Modal {
                     .setTooltip(t('BROWSE_TOOLTIP'))
                     .onClick(async () => {
                         try {
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Electron requirement via window
                             const electron = window.require('electron');
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- Electron remote access
                             const remote = electron.remote;
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Electron dialog access
                             const dialog = remote ? remote.dialog : electron.dialog;
 
                             if (!dialog) {
                                 throw new Error('Electron dialog is not available');
                             }
 
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- Electron dialog call
                             const result = await dialog.showOpenDialog({
                                 properties: ['openDirectory', 'createDirectory'],
                                 title: t('PICKER_TITLE')
                             });
 
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- result from electron
                             if (!result.canceled && result.filePaths.length > 0) {
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- access filePaths
                                 this.targetPath = result.filePaths[0];
                                 await this.display();
                             }
@@ -349,14 +349,13 @@ export class ExportModal extends Modal {
             const data = (parseYaml(content) as { views?: Record<string, unknown> | Array<Record<string, unknown>> }) || {};
 
             if (data && data.views) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const viewsArray = Array.isArray(data.views) ? data.views : Object.entries(data.views).map(([id, view]) => ({ ...(view as any), id })); // eslint-disable-line @typescript-eslint/no-unsafe-return
+                const viewsArray = Array.isArray(data.views) ? data.views : Object.entries(data.views).map(([id, view]) => ({ ...(view as any), id })); // eslint-disable-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- Dynamic view conversion
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- map raw view to ViewInfo
                 return viewsArray.map((view: any, index: number) => ({
-                    id: (view.id as string) || `view-${index}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access
-                    name: (view.name as string) || (view.id as string) || `View ${index + 1}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    id: (view.id as string) || `view-${index}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access -- id from dynamic data
+                    name: (view.name as string) || (view.id as string) || `View ${index + 1}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access -- name from dynamic data
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- assign dynamic view
                     view: view,
                     baseInstance: matchingBase
                 }));
@@ -478,9 +477,9 @@ export class ExportModal extends Modal {
 
                 if (!leafView) {
                     // Try getting from workspace active view
-                    const viewByType = app.viewRegistry?.viewByType;
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-                    const activeView = viewByType ? app.workspace.getActiveViewOfType(Object.values(viewByType).find((v: any) => v?.prototype?.constructor?.name === 'BasesView') || null) : null;
+                    const viewRegistry = app.viewRegistry;
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- access Obsidian internal registry
+                    const activeView = viewRegistry ? app.workspace.getActiveViewOfType(Object.values(viewRegistry.viewByType).find((v: any) => v?.prototype?.constructor?.name === 'BasesView') || null) : null;
                     if (activeView) {
                         leafView = activeView;
                     }
@@ -533,19 +532,19 @@ export class ExportModal extends Modal {
                 // The actual results are in controller.view.data.data
                 if (controller.view.data && controller.view.data.data && Array.isArray(controller.view.data.data)) {
                     const results = controller.view.data.data;
-                    return results.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+                    return results.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return -- Map dynamic result
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
-                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- access file on dynamic result
+                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- filter by path on dynamic result
                 }
 
                 // Also check controller.view.rows
                 if (controller.view.rows && Array.isArray(controller.view.rows)) {
                     const rows = controller.view.rows;
-                    return rows.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
+                    return rows.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return -- Map dynamic row
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
-                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- access file on dynamic row
+                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- filter by path on dynamic row
                 }
             }
 
@@ -555,12 +554,12 @@ export class ExportModal extends Modal {
                 const rows = viewContainer.querySelectorAll('.bases-row, tr[data-file], .table-row');
                 if (rows.length > 0) {
                     const files: TFile[] = [];
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- row from DOM
                     rows.forEach((row: any) => {
-                        const filePath = row.dataset?.file || row.getAttribute('data-file'); // eslint-disable-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                        const filePath = row.dataset?.file || row.getAttribute('data-file'); // eslint-disable-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- access dataset on dynamic row
 
                         if (filePath) {
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- pass path to vault
                             const file = this.app.vault.getAbstractFileByPath(filePath);
                             if (file instanceof TFile) files.push(file);
                         }
@@ -577,9 +576,9 @@ export class ExportModal extends Modal {
         let fs: FSModule | undefined;
         let path: PathModule | undefined;
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Node fs requirement via window
             fs = window.require('fs');
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Node path requirement via window
             path = window.require('path');
         } catch (e) {
             console.warn('[ExportBases] Could not load fs or path:', e);
