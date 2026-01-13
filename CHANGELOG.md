@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.3.0] - 2026-01-12
+## [1.3.0] - 2026-01-13
 ### Added
 - Comprehensive internationalization (i18n) support for **English**, **Chinese (Simplified)**, **Japanese**, and **Korean**.
 - Centralized translation framework in `src/i18n.ts` with recursive string interpolation.
@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Submission Readiness**: Updated License copyright and removed development-only console logs to comply with Community Plugin submission guidelines.
+- **ESLint Compliance**: Refactored the codebase to resolve all bot-reported issues, including the removal of forbidden `any` ignores.
+- **Strict Typing**: Replaced `any` with `unknown` and specific types, using type guards and `instanceof TFile` checks for Obsidian internal APIs.
+- **Async Methods**: Fixed redundant `async` keywords in `onload` and `getBases`.
+- **Build & Test Fixes**: Resolved TypeScript "possibly undefined" errors and updated unit tests to mock `TFile` class correctly.
 
 ## [1.2.1] - 2026-01-07
 
