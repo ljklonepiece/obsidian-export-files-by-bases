@@ -474,13 +474,15 @@ export class ExportModal extends Modal {
                 if (!leafView) {
                     // Try getting from workspace active view
                     const viewRegistry = app.viewRegistry;
-                    const basesViewCtor = Object.values(viewRegistry.viewByType).find((v: unknown) => {
-                        const viewCtor = (v as { prototype?: { constructor?: { name?: string } } })?.prototype?.constructor;
-                        return viewCtor?.name === 'BasesView';
-                    }) as Parameters<typeof app.workspace.getActiveViewOfType>[0] | undefined;
-                    const activeView = basesViewCtor ? app.workspace.getActiveViewOfType(basesViewCtor) : null;
-                    if (activeView) {
-                        leafView = activeView as unknown as BasesView;
+                    if (viewRegistry) {
+                        const basesViewCtor = Object.values(viewRegistry.viewByType).find((v: unknown) => {
+                            const viewCtor = (v as { prototype?: { constructor?: { name?: string } } })?.prototype?.constructor;
+                            return viewCtor?.name === 'BasesView';
+                        }) as Parameters<typeof app.workspace.getActiveViewOfType>[0] | undefined;
+                        const activeView = basesViewCtor ? app.workspace.getActiveViewOfType(basesViewCtor) : null;
+                        if (activeView) {
+                            leafView = activeView as unknown as BasesView;
+                        }
                     }
                 }
             }

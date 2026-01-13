@@ -26,6 +26,9 @@ jest.mock('obsidian', () => ({
         constructor(app: any) { this.app = app; }
         close = jest.fn();
     },
+    TAbstractFile: class { path: string; name: string; parent: any; },
+    TFile: class { path: string; name: string; parent: any; extension: string; basename: string; },
+    TFolder: class { path: string; name: string; parent: any; children: any[]; },
     Setting: class {
         contentEl: any;
         constructor(contentEl: any) { this.contentEl = contentEl; }
@@ -139,7 +142,7 @@ describe('ExportModal', () => {
     });
 
     it('should auto-detect active Base and View from workspace', async () => {
-        const mockBaseFile = { path: 'Untitled.base' };
+        const mockBaseFile = Object.assign(new TFile(), { path: 'Untitled.base' });
         (app.workspace.getLeavesOfType as jest.Mock).mockReturnValue([{
             view: {
                 file: mockBaseFile,
@@ -169,7 +172,7 @@ describe('ExportModal', () => {
     });
 
     it('should extract results from controller.view.data.data', async () => {
-        const mockFile = { path: 'note1.md', name: 'note1.md' };
+        const mockFile = Object.assign(new TFile(), { path: 'note1.md', name: 'note1.md' });
         const viewInstance = {
             controller: {
                 viewName: 'family',
@@ -223,14 +226,15 @@ describe('ExportModal', () => {
         const openFileSpy = jest.fn();
         (app.workspace.getLeaf as jest.Mock).mockReturnValue({ openFile: openFileSpy });
 
-        const base = { id: 'Other.base', file: { path: 'Other.base' } as TFile, name: 'Other' };
+        const baseFile = Object.assign(new TFile(), { path: 'Other.base' });
+        const base = { id: 'Other.base', file: baseFile, name: 'Other' };
         const viewInfo = { id: 'family', name: 'family', view: {}, baseInstance: null };
 
         // Mock getting leaves AFTER opening (second call)
         (app.workspace.getLeavesOfType as jest.Mock).mockImplementation(() => {
             return [{
                 view: {
-                    file: { path: 'Other.base' },
+                    file: baseFile,
                     controller: {
                         viewName: 'family',
                         view: { data: { data: [] } }
