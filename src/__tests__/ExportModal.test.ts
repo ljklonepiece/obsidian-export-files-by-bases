@@ -133,7 +133,7 @@ describe('ExportModal', () => {
     });
 
     it('should fetch bases from .base files', async () => {
-        const bases = await modal.getBases();
+        const bases = modal.getBases();
         expect(bases).toHaveLength(1);
         expect(bases[0]?.name).toBe('Untitled');
     });
@@ -155,7 +155,7 @@ describe('ExportModal', () => {
         }
 
         // Mock views for this base
-        const bases = await modal.getBases();
+        const bases = modal.getBases();
         await modal.getViews(bases[0]!);
         // Set detected view name manually for the test because display() sets it
         modal._autoDetectedViewName = 'family';

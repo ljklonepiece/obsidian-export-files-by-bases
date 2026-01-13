@@ -4,8 +4,7 @@ import { t } from './i18n';
 // Extend Window to include electron require
 declare global {
     interface Window {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Use any for electron require as it's not typed here
-        require(module: string): any;
+        require(module: string): unknown;
     }
 }
 
@@ -31,26 +30,19 @@ interface ViewInfo {
 }
 
 interface BasesController {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Controller properties are dynamic from Bases plugin
-    [key: string]: any;
+    [key: string]: unknown;
     viewName?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- state is dynamic
-    queryState?: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ctx is dynamic
-    ctx?: any;
+    queryState?: unknown;
+    ctx?: unknown;
     selectView?(name: string): void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic arguments from Bases
-    setQueryAndView?(a: any, b: string): void;
+    setQueryAndView?(a: unknown, b: string): void;
     viewHeaderEl?: HTMLElement;
     viewContainerEl?: HTMLElement;
     view?: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic data structure
-        data?: { data?: any[] };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic row data
-        rows?: any[];
+        data?: { data?: unknown[] };
+        rows?: unknown[];
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal children
-    _children?: any[];
+    _children?: unknown[];
 }
 
 interface BasesView {
@@ -61,14 +53,12 @@ interface BasesView {
 
 interface BasesPlugin {
     enabled: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Generic instance from Obsidian
-    instance?: any;
+    instance?: unknown;
 }
 
 interface FSModule {
     promises: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Node fs data can be various types
-        writeFile(path: string, data: any): Promise<void>;
+        writeFile(path: string, data: string | Uint8Array): Promise<void>;
         mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
     };
     existsSync(path: string): boolean;
@@ -88,8 +78,7 @@ interface ExtendedApp extends App {
         plugins: Record<string, BasesPlugin>;
     };
     viewRegistry?: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Internal Obsidian view registry
-        viewByType: Record<string, any>;
+        viewByType: Record<string, unknown>;
     };
 }
 
@@ -121,7 +110,7 @@ export class ExportModal extends Modal {
 
         try {
             // Fetch data upfront to avoid async race conditions in dropdowns
-            const bases = await this.getBases();
+            const bases = this.getBases();
 
             // Auto-detect active Base and View from workspace
             if (!this.selectedBase) {
@@ -205,28 +194,27 @@ export class ExportModal extends Modal {
                     .setTooltip(t('BROWSE_TOOLTIP'))
                     .onClick(async () => {
                         try {
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Electron requirement via window
-                            const electron = window.require('electron');
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- Electron remote access
-                            const remote = electron.remote;
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Electron dialog access
-                            const dialog = remote ? remote.dialog : electron.dialog;
+                            const electron = window.require('electron') as { remote?: { dialog: unknown }, dialog: unknown };
+                            const remote = electron.remote as { dialog: unknown } | undefined;
+                            const dialog = (remote ? remote.dialog : electron.dialog) as {
+                                showOpenDialog(options: unknown): Promise<{ canceled: boolean, filePaths: string[] }>
+                            } | undefined;
 
                             if (!dialog) {
                                 throw new Error('Electron dialog is not available');
                             }
 
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- Electron dialog call
                             const result = await dialog.showOpenDialog({
                                 properties: ['openDirectory', 'createDirectory'],
                                 title: t('PICKER_TITLE')
                             });
 
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- result from electron
-                            if (!result.canceled && result.filePaths.length > 0) {
-                                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- access filePaths
-                                this.targetPath = result.filePaths[0];
-                                await this.display();
+                            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                                const pickedPath = result.filePaths[0];
+                                if (typeof pickedPath === 'string') {
+                                    this.targetPath = pickedPath;
+                                    await this.display();
+                                }
                             }
                         } catch (err) {
                             console.error('Error opening directory picker:', err);
@@ -305,8 +293,13 @@ export class ExportModal extends Modal {
         }
     }
 
+    getLocale(): string {
+        const lang = (window as unknown as { app?: { locale?: string } }).app?.locale;
+        if (lang) return lang;
+        return 'en';
+    }
 
-    async getBases(): Promise<BaseInfo[]> {
+    getBases(): BaseInfo[] {
         const app = this.app as ExtendedApp;
         // Try both internal and third-party plugin locations
         const basesPlugin = app.internalPlugins?.getPluginById('bases') || app.plugins?.getPlugin('bases');
@@ -349,16 +342,19 @@ export class ExportModal extends Modal {
             const data = (parseYaml(content) as { views?: Record<string, unknown> | Array<Record<string, unknown>> }) || {};
 
             if (data && data.views) {
-                const viewsArray = Array.isArray(data.views) ? data.views : Object.entries(data.views).map(([id, view]) => ({ ...(view as any), id })); // eslint-disable-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- Dynamic view conversion
+                const viewsArray = Array.isArray(data.views) ? data.views : Object.entries(data.views).map(([id, view]) => ({ ...(view as Record<string, unknown>), id }));
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- map raw view to ViewInfo
-                return viewsArray.map((view: any, index: number) => ({
-                    id: (view.id as string) || `view-${index}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access -- id from dynamic data
-                    name: (view.name as string) || (view.id as string) || `View ${index + 1}`, // eslint-disable-line @typescript-eslint/no-unsafe-member-access -- name from dynamic data
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- assign dynamic view
-                    view: view,
-                    baseInstance: matchingBase
-                }));
+                return viewsArray.map((viewData: unknown, index: number) => {
+                    const view = viewData as Record<string, unknown>;
+                    const viewId = typeof view.id === 'string' ? view.id : undefined;
+                    const viewName = typeof view.name === 'string' ? view.name : undefined;
+                    return {
+                        id: viewId ?? `view-${index}`,
+                        name: viewName ?? viewId ?? `View ${index + 1}`,
+                        view: view,
+                        baseInstance: matchingBase
+                    };
+                });
             }
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : String(e);
@@ -478,10 +474,13 @@ export class ExportModal extends Modal {
                 if (!leafView) {
                     // Try getting from workspace active view
                     const viewRegistry = app.viewRegistry;
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- access Obsidian internal registry
-                    const activeView = viewRegistry ? app.workspace.getActiveViewOfType(Object.values(viewRegistry.viewByType).find((v: any) => v?.prototype?.constructor?.name === 'BasesView') || null) : null;
+                    const basesViewCtor = Object.values(viewRegistry.viewByType).find((v: unknown) => {
+                        const viewCtor = (v as { prototype?: { constructor?: { name?: string } } })?.prototype?.constructor;
+                        return viewCtor?.name === 'BasesView';
+                    }) as Parameters<typeof app.workspace.getActiveViewOfType>[0] | undefined;
+                    const activeView = basesViewCtor ? app.workspace.getActiveViewOfType(basesViewCtor) : null;
                     if (activeView) {
-                        leafView = activeView;
+                        leafView = activeView as unknown as BasesView;
                     }
                 }
             }
@@ -532,19 +531,21 @@ export class ExportModal extends Modal {
                 // The actual results are in controller.view.data.data
                 if (controller.view.data && controller.view.data.data && Array.isArray(controller.view.data.data)) {
                     const results = controller.view.data.data;
-                    return results.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return -- Map dynamic result
+                    return results.map((r: unknown) => {
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
-                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- access file on dynamic result
-                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- filter by path on dynamic result
+                        const fileCandidate = (r as { file?: unknown })?.file || r;
+                        return fileCandidate instanceof TFile ? fileCandidate : null;
+                    }).filter((f: TFile | null): f is TFile => !!(f && f.path));
                 }
 
                 // Also check controller.view.rows
                 if (controller.view.rows && Array.isArray(controller.view.rows)) {
                     const rows = controller.view.rows;
-                    return rows.map((r: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return -- Map dynamic row
+                    return rows.map((r: unknown) => {
                         if (typeof r === 'string') return this.app.vault.getAbstractFileByPath(r);
-                        return r.file || r; // eslint-disable-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- access file on dynamic row
-                    }).filter((f: any) => f && f.path); // eslint-disable-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access -- filter by path on dynamic row
+                        const fileCandidate = (r as { file?: unknown })?.file || r;
+                        return fileCandidate instanceof TFile ? fileCandidate : null;
+                    }).filter((f: TFile | null): f is TFile => !!(f && f.path));
                 }
             }
 
@@ -554,12 +555,10 @@ export class ExportModal extends Modal {
                 const rows = viewContainer.querySelectorAll('.bases-row, tr[data-file], .table-row');
                 if (rows.length > 0) {
                     const files: TFile[] = [];
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- row from DOM
-                    rows.forEach((row: any) => {
-                        const filePath = row.dataset?.file || row.getAttribute('data-file'); // eslint-disable-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- access dataset on dynamic row
+                    rows.forEach((row: HTMLElement) => {
+                        const filePath = row.dataset?.file || row.getAttribute('data-file');
 
                         if (filePath) {
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- pass path to vault
                             const file = this.app.vault.getAbstractFileByPath(filePath);
                             if (file instanceof TFile) files.push(file);
                         }
@@ -576,10 +575,8 @@ export class ExportModal extends Modal {
         let fs: FSModule | undefined;
         let path: PathModule | undefined;
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Node fs requirement via window
-            fs = window.require('fs');
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Node path requirement via window
-            path = window.require('path');
+            fs = window.require('fs') as FSModule;
+            path = window.require('path') as PathModule;
         } catch (e) {
             console.warn('[ExportBases] Could not load fs or path:', e);
         }

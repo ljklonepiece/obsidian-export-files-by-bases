@@ -4,7 +4,7 @@ import { t } from './i18n';
 
 export default class ExportBasesFilesPlugin extends Plugin {
 
-	async onload() {
+	onload() {
 		// This adds a ribbon icon to open the export modal
 		this.addRibbonIcon('upload', t('RIBBON_TOOLTIP'), () => {
 			new ExportModal(this.app).open();
