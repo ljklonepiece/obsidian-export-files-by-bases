@@ -24,6 +24,7 @@ jest.mock('obsidian', () => ({
 
 describe('ExportModal - resolveLinkedFilesRecursive', () => {
     let app: any;
+    let plugin: any;
     let modal: ExportModal;
 
     beforeEach(() => {
@@ -35,7 +36,12 @@ describe('ExportModal - resolveLinkedFilesRecursive', () => {
                 resolvedLinks: {}
             }
         };
-        modal = new ExportModal(app);
+        plugin = {
+            app: app,
+            settings: { lastExportPath: '' },
+            saveSettings: jest.fn().mockResolvedValue(undefined)
+        };
+        modal = new ExportModal(plugin);
     });
 
     const createMockFile = (path: string): TFile => {

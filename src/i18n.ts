@@ -33,6 +33,8 @@ export const locales = {
         INCLUDE_MEDIA: 'Include media files',
         INCLUDE_MEDIA_DESC: 'Include images, videos, audio, and other attachments',
         EXPORT_BUTTON: 'Export',
+        SELECT_FOLDER_BUTTON: 'Select Folder',
+        FOLDER_NAME_PLACEHOLDER: 'Select_This_Folder',
 
         // ExportModal.ts - Notices
         NOTICE_EXPORTING: 'Exporting files from {{base}}...',
@@ -81,6 +83,8 @@ export const locales = {
         INCLUDE_MEDIA: '包含媒体文件',
         INCLUDE_MEDIA_DESC: '包含图片、视频、音频和其他附件',
         EXPORT_BUTTON: '导出',
+        SELECT_FOLDER_BUTTON: '选择文件夹',
+        FOLDER_NAME_PLACEHOLDER: '选择此文件夹',
 
         // ExportModal.ts - Notices
         NOTICE_EXPORTING: '正在从 {{base}} 导出文件...',
@@ -129,6 +133,8 @@ export const locales = {
         INCLUDE_MEDIA: 'メディアファイルを含める',
         INCLUDE_MEDIA_DESC: '画像、動画、音声、その他の添付ファイルを含める',
         EXPORT_BUTTON: 'エクスポート',
+        SELECT_FOLDER_BUTTON: 'フォルダを選択',
+        FOLDER_NAME_PLACEHOLDER: 'このフォルダを選択',
 
         // ExportModal.ts - Notices
         NOTICE_EXPORTING: '{{base}} からファイルをエクスポート中...',
@@ -177,6 +183,8 @@ export const locales = {
         INCLUDE_MEDIA: '미디어 파일 포함',
         INCLUDE_MEDIA_DESC: '이미지, 비디오, 오디오 및 기타 첨부 파일 포함',
         EXPORT_BUTTON: '내보내기',
+        SELECT_FOLDER_BUTTON: '폴더 선택',
+        FOLDER_NAME_PLACEHOLDER: '이_폴더_선택',
 
         // ExportModal.ts - Notices
         NOTICE_EXPORTING: '{{base}}에서 파일을 내보내는 중...',

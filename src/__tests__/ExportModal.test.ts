@@ -100,6 +100,7 @@ jest.mock('obsidian', () => ({
 
 describe('ExportModal', () => {
     let app: any;
+    let plugin: any;
     let modal: ExportModal;
 
     beforeEach(() => {
@@ -124,7 +125,14 @@ describe('ExportModal', () => {
                 viewByType: { bases: { prototype: { constructor: { name: 'BasesView' } } } }
             }
         };
-        modal = new ExportModal(app);
+
+        plugin = {
+            app: app,
+            settings: { lastExportPath: '' },
+            saveSettings: jest.fn().mockResolvedValue(undefined)
+        };
+
+        modal = new ExportModal(plugin);
 
         // Mock electron/remote
         (window as any).require = jest.fn((mod) => {

@@ -1,4 +1,5 @@
-import { App, Modal, Setting, Notice, parseYaml, TFile } from 'obsidian';
+import { App, Modal, Setting, Notice, parseYaml, TFile, Platform } from 'obsidian';
+import type ExportBasesFilesPlugin from './main';
 import { t } from './i18n';
 
 // Extend Window to include electron require
@@ -60,8 +61,10 @@ interface FSModule {
     promises: {
         writeFile(path: string, data: string | Uint8Array): Promise<void>;
         mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
+        stat(path: string): Promise<{ isDirectory(): boolean }>;
     };
     existsSync(path: string): boolean;
+    stat(path: string, callback: (err: Error | null, stats: { isDirectory(): boolean }) => void): void;
 }
 
 interface PathModule {
@@ -83,6 +86,7 @@ interface ExtendedApp extends App {
 }
 
 export class ExportModal extends Modal {
+    plugin: ExportBasesFilesPlugin;
     selectedBase: BaseInfo | null = null;
     selectedView: ViewInfo | null = null;
     targetPath = "";
@@ -91,8 +95,10 @@ export class ExportModal extends Modal {
     includeMediaFiles = false;
     _autoDetectedViewName?: string;
 
-    constructor(app: App) {
-        super(app);
+    constructor(plugin: ExportBasesFilesPlugin) {
+        super(plugin.app);
+        this.plugin = plugin;
+        this.targetPath = "";
     }
 
     onOpen() {
@@ -186,8 +192,10 @@ export class ExportModal extends Modal {
                 .addText(text => text
                     .setPlaceholder(t('PATH_INPUT_PLACEHOLDER'))
                     .setValue(this.targetPath)
-                    .onChange((value) => {
+                    .onChange(async (value) => {
                         this.targetPath = value;
+                        this.plugin.settings.lastExportPath = value;
+                        await this.plugin.saveSettings();
                     }))
                 .addButton(button => button
                     .setButtonText(t('BROWSE_BUTTON'))
@@ -197,23 +205,60 @@ export class ExportModal extends Modal {
                             const electron = window.require('electron') as { remote?: { dialog: unknown }, dialog: unknown };
                             const remote = electron.remote as { dialog: unknown } | undefined;
                             const dialog = (remote ? remote.dialog : electron.dialog) as {
-                                showOpenDialog(options: unknown): Promise<{ canceled: boolean, filePaths: string[] }>
+                                showOpenDialog(options: unknown): Promise<{ canceled: boolean, filePaths: string[] }>;
+                                showSaveDialog(options: unknown): Promise<{ canceled: boolean, filePath: string }>;
                             } | undefined;
 
                             if (!dialog) {
                                 throw new Error('Electron dialog is not available');
                             }
 
-                            const result = await dialog.showOpenDialog({
-                                properties: ['openDirectory', 'createDirectory'],
-                                title: t('PICKER_TITLE')
-                            });
+                            if (Platform.isLinux) {
+                                // Workaround for Linux: showOpenDialog often lacks "New Folder" button.
+                                // showSaveDialog always has it. We'll use it to let users pick/create a folder.
+                                const path = window.require('path') as PathModule;
+                                const result = await dialog.showSaveDialog({
+                                    title: t('PICKER_TITLE'),
+                                    defaultPath: this.plugin.settings.lastExportPath ?
+                                        path.join(this.plugin.settings.lastExportPath, t('FOLDER_NAME_PLACEHOLDER')) :
+                                        t('FOLDER_NAME_PLACEHOLDER'),
+                                    buttonLabel: t('SELECT_FOLDER_BUTTON'),
+                                    // Use properties to allow directory creation
+                                    properties: ['createDirectory', 'showOverwriteConfirmation'] as ("showHiddenFiles" | "createDirectory" | "treatPackageAsDirectory" | "showOverwriteConfirmation" | "dontAddToRecent")[]
+                                });
 
-                            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
-                                const pickedPath = result.filePaths[0];
-                                if (typeof pickedPath === 'string') {
+                                if (!result.canceled && result.filePath) {
+                                    let pickedPath = result.filePath;
+                                    // The user selected a "file" in a folder. We want the folder.
+                                    const pathParts = pickedPath.split(/[/\\]/);
+                                    pathParts.pop(); // Remove the filename/placeholder
+                                    pickedPath = pathParts.join(path.join('a', 'b').includes('\\') ? '\\' : '/');
+
                                     this.targetPath = pickedPath;
+                                    this.plugin.settings.lastExportPath = pickedPath;
+                                    await this.plugin.saveSettings();
                                     await this.display();
+                                }
+                            } else {
+                                const properties: ("openFile" | "openDirectory" | "multiSelections" | "showHiddenFiles" | "createDirectory" | "promptToCreate" | "noResolveAliases" | "treatPackageAsDirectory" | "dontAddToRecent")[] = ['openDirectory'];
+                                if (Platform.isMacOS) {
+                                    properties.push('createDirectory');
+                                }
+
+                                const result = await dialog.showOpenDialog({
+                                    properties: properties,
+                                    title: t('PICKER_TITLE'),
+                                    defaultPath: this.plugin.settings.lastExportPath || undefined
+                                });
+
+                                if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                                    const pickedPath = result.filePaths[0];
+                                    if (typeof pickedPath === 'string') {
+                                        this.targetPath = pickedPath;
+                                        this.plugin.settings.lastExportPath = pickedPath;
+                                        await this.plugin.saveSettings();
+                                        await this.display();
+                                    }
                                 }
                             }
                         } catch (err) {
