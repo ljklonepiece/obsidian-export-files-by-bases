@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.3.0] - 2026-01-13
+## [1.3.0] - 2026-01-14
 ### Added
-- Comprehensive internationalization (i18n) support for **English**, **Chinese (Simplified)**, **Japanese**, and **Korean**.
-- Centralized translation framework in `src/i18n.ts` with recursive string interpolation.
-- Full localization of the Ribbon icon, Command Palette, Settings tab, and all Export Modal UI elements.
+- **Robust Linux Directory Picker**: Implemented a platform-specific workaround for Linux/Ubuntu to ensure the "New Folder" button is always available in the directory dialog.
+- **Directory Choice Persistence**: Added a settings system to remember the last used export directory for the "Browse" button, while keeping the input field clean by default for a fresh start.
+- **Comprehensive Internationalization (i18n)**: Support for **English**, **Chinese (Simplified)**, **Japanese**, and **Korean**.
 - **Funding URL**: Added a link to "Buy Me a Coffee" in the manifest.
 
 ### Removed
