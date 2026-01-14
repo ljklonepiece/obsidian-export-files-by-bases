@@ -1,5 +1,7 @@
 # Obsidian Export-Bases-Files Plugin
 
+[简体中文](./README_zh.md) | English
+
 **Export-Bases-Files** is an Obsidian plugin designed to bridge the gap between Obsidian's powerful internal **Bases** feature and your external file system. It allows you to export a specific set of files—filtered by your Bases Table Views—to any folder on your computer with just a few clicks.
 
 ![Demo](./assets/obsidian-file-exporter-demo.gif)
@@ -33,14 +35,6 @@ As this plugin is not yet available in the official Obsidian Community Plugins g
 6. **Export**: Hit the **Export** button. A notice will appear once the process is complete!
 
 
-## Key Features
-
-- 🚀 **Strict Bases API Integration**: Unlike basic filtering, this plugin talks directly to the internal Bases engine. If it shows up in your Table View, it will show up in your export.
-- 🔍 **Smart Auto-Detection**: Automatically detects your active Base and Table View when you open the export interface, saving you from repetitive manual selection.
-- 🔄 **Programmatic View Switching**: Selecting a view in the export modal automatically switches your Bases tab to the correct view in the background to ensure data consistency.
-- 📂 **Automatic Base Management**: If you select a Base that isn't currently open, the plugin will automatically open it for you before processing the export.
-- 🖱️ **Native Directory Picker**: Includes a "Browse..." button to select your export destination using a familiar system folder dialog (Desktop only).
-- 🛡️ **Safe & Non-Destructive**: The plugin only *copies* files to your external folder. Your original notes in Obsidian are never moved or modified.
 
 
 ## For Developers
